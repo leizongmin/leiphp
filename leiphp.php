@@ -1,6 +1,9 @@
 <?php
 /**
- * 初始化系统（所有程序都要包含此文件）
+ * LeiPHP
+ *
+ * @author 老雷<leizongmin@gmail.com>
+ * @version 0.1
  */
 
 // 开始时间
