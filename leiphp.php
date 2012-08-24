@@ -7,13 +7,13 @@
  */
 
 // 开始时间
-define('APP_TIMESTAMP_START', microtime());
+define('APP_TIMESTAMP_START', microtime(true));
 
 // 处理不同的请求方法
 function _leiapp_request_method_router () {
   $method = strtolower($_SERVER['REQUEST_METHOD']);
   $funcname = "method_$method";
-  define('APP_TIMESTAMP_ROUTE', microtime());
+  define('APP_TIMESTAMP_ROUTE', microtime(true));
   if (function_exists($funcname)) {
     $funcname();
   } elseif (function_exists('method_all')) {
@@ -25,8 +25,8 @@ function _leiapp_request_method_router () {
 
   $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
   if (defined('APP_DEBUG') && substr($accept_type, 0, 9) == 'text/html') {
-    $spent2 = round((microtime() - APP_TIMESTAMP_ROUTE) * 1000, 3);
-    $spent = round((microtime() - APP_TIMESTAMP_START) * 1000, 3);
+    $spent2 = round((microtime(true) - APP_TIMESTAMP_ROUTE) * 1000, 3);
+    $spent = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3);
     $debug = DEBUG::clear();
     echo "<div style='
     font-size: 12px;
@@ -58,10 +58,10 @@ class SQL {
    * @return {bool}
    */
   public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '') {
-    $timestamp = microtime();
+    $timestamp = microtime(true);
     mysql_connect($server, $username, $password);
     $r = mysql_select_db($database);
-    DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'MySQL');
+    DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
     // 设置默认字符集为utf-8
     SQL::update('set names utf8');
     return $r;
@@ -106,7 +106,7 @@ class SQL {
    * @return {array}
    */
   public static function getAll ($sql) {
-    $timestamp = microtime();
+    $timestamp = microtime(true);
     $r = mysql_query($sql);
     if (mysql_errno()) {
       return FALSE;
@@ -115,7 +115,7 @@ class SQL {
     while ($row = mysql_fetch_array($r, MYSQL_ASSOC)) {
       $data[] = $row;
     }
-    DEBUG::put('Query: '.$sql.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'MySQL');
+    DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
     return count($data) < 1 ? FALSE : $data;
   }
   public static function getData ($sql) {
@@ -144,9 +144,9 @@ class SQL {
    * @return {int}
    */
   public static function update ($sql) {
-    $timestamp = microtime();
+    $timestamp = microtime(true);
     mysql_query($sql);
-    DEBUG::put('Query: '.$sql.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'MySQL');
+    DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
     return mysql_affected_rows();
   }
   public static function runSql ($sql) {
@@ -273,10 +273,10 @@ class UPLOAD {
    * @return {string}
    */
   public static function move ($file, $target) {
-    $timestamp = microtime();
+    $timestamp = microtime(true);
     $source = is_array($file) ? $file['tmp_name'] : $file;
     move_uploaded_file($source, $target);
-    DEBUG::put('Move '.$source.' to '.$target.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Upload');
+    DEBUG::put('Move '.$source.' to '.$target.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Upload');
     return $target;
   }
 }
@@ -341,22 +341,22 @@ class APP {
     }
     if (empty($layout)) {
       $filename = APP_TEMPLATE_ROOT.$name;
-      $timestamp = microtime();
+      $timestamp = microtime(true);
       include($filename);
-      DEBUG::put('Render '.$filename.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Template');
+      DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
     } else {
       if (!pathinfo($layout, PATHINFO_EXTENSION)) {
         $layout = $layout.'.html';
         $filename = APP_TEMPLATE_ROOT.$name;
-        $timestamp = microtime();
+        $timestamp = microtime(true);
         ob_start();
         include($filename);
-        DEBUG::put('Render '.$filename.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Template');
+        DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
         $body = ob_get_clean();
         $filename = APP_TEMPLATE_ROOT.$layout;
-        $timestamp = microtime();
+        $timestamp = microtime(true);
         include($filename);
-        DEBUG::put('Render '.$filename.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Template');
+        DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
       }
     }
   }
