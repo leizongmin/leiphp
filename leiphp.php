@@ -58,11 +58,12 @@ class SQL {
    * @return {bool}
    */
   public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '') {
+    $timestamp = microtime();
     mysql_connect($server, $username, $password);
     $r = mysql_select_db($database);
+    DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'MySQL');
     // 设置默认字符集为utf-8
     SQL::update('set names utf8');
-    DEBUG::put('Connected: '.$username.'@'.$server, 'MySQL');
     return $r;
   }
   
@@ -105,7 +106,7 @@ class SQL {
    * @return {array}
    */
   public static function getAll ($sql) {
-    DEBUG::put('Query: '.$sql, 'MySQL');
+    $timestamp = microtime();
     $r = mysql_query($sql);
     if (mysql_errno()) {
       return FALSE;
@@ -114,10 +115,8 @@ class SQL {
     while ($row = mysql_fetch_array($r, MYSQL_ASSOC)) {
       $data[] = $row;
     }
-    if (count($data) < 1)
-      return FALSE;
-    else
-      return $data;
+    DEBUG::put('Query: '.$sql.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'MySQL');
+    return count($data) < 1 ? FALSE : $data;
   }
   public static function getData ($sql) {
     return SQL::getAll($sql);
@@ -131,12 +130,8 @@ class SQL {
    */
   public static function getOne ($sql) {
     $sql .= ' LIMIT 1';
-    DEBUG::put('Query: '.$sql, 'MySQL');
     $data = SQL::getAll($sql);
-    if ($data == FALSE)
-      return FALSE;
-    else
-      return $data[0];
+    return $data == FALSE ? FALSE : $data[0];
   }
   public static function getLine ($sql) {
     return SQL::getOne($sql);
@@ -149,8 +144,9 @@ class SQL {
    * @return {int}
    */
   public static function update ($sql) {
-    DEBUG::put('Query: '.$sql, 'MySQL');
+    $timestamp = microtime();
     mysql_query($sql);
+    DEBUG::put('Query: '.$sql.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'MySQL');
     return mysql_affected_rows();
   }
   public static function runSql ($sql) {
@@ -344,19 +340,22 @@ class APP {
     }
     if (empty($layout)) {
       $filename = APP_TEMPLATE_ROOT.$name;
-      DEBUG::put('Render '.$filename, 'Template');
+      $timestamp = microtime();
       include($filename);
+      DEBUG::put('Render '.$filename.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Template');
     } else {
       if (!pathinfo($layout, PATHINFO_EXTENSION)) {
         $layout = $layout.'.html';
         $filename = APP_TEMPLATE_ROOT.$name;
-        DEBUG::put('Render '.$filename, 'Template');
+        $timestamp = microtime();
         ob_start();
         include($filename);
+        DEBUG::put('Render '.$filename.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Template');
         $body = ob_get_clean();
         $filename = APP_TEMPLATE_ROOT.$layout;
-        DEBUG::put('Render '.$filename, 'Template');
+        $timestamp = microtime();
         include($filename);
+        DEBUG::put('Render '.$filename.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Template');
       }
     }
   }
