@@ -273,9 +273,10 @@ class UPLOAD {
    * @return {string}
    */
   public static function move ($file, $target) {
-    if (substr($target, -1) != '/') $target .= '/';
-    $target .= $file['name'];
-    move_uploaded_file($file['tmp_name'], $target);
+    $timestamp = microtime();
+    $source = is_array($file) ? $file['tmp_name'] : $file;
+    move_uploaded_file($source, $target);
+    DEBUG::put('Move '.$source.' to '.$target.' spent: '.round((microtime() - $timestamp) * 1000, 3).'ms', 'Upload');
     return $target;
   }
 }
