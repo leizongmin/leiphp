@@ -76,6 +76,7 @@ function method_delete () {
 }
 
 ?>
+```
 
 
 操作MySQL数据库
