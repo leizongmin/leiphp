@@ -109,6 +109,7 @@ class SQL {
     $timestamp = microtime(true);
     $r = mysql_query($sql);
     if (mysql_errno()) {
+      DEBUG::put('Query: '.$sql.' fail: #'.mysql_errno(), 'MySQL');
       return FALSE;
     }
     $data = array();
@@ -146,7 +147,11 @@ class SQL {
   public static function update ($sql) {
     $timestamp = microtime(true);
     mysql_query($sql);
-    DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
+    if (mysql_errno()) {
+      DEBUG::put('Query: '.$sql.' fail: #'.mysql_errno(), 'MySQL');
+    } else {
+      DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
+    }
     return mysql_affected_rows();
   }
   public static function runSql ($sql) {
