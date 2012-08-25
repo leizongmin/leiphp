@@ -63,7 +63,7 @@ class SQL {
     $r = mysql_select_db($database);
     DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
     // 设置默认字符集为utf-8
-    SQL::update('set names utf8');
+    // SQL::update('set names utf8');
     return $r;
   }
   
