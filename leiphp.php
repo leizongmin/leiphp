@@ -52,11 +52,11 @@ if (!class_exists('SQL', FALSE)) {
      * 连接到数据库
      * 成功返回true, 失败返回false
      *
-     * @param {string} $server
-     * @param {string} $username
-     * @param {string} $password
-     * @param {string} $database
-     * @return {bool}
+     * @param string $server
+     * @param string $username
+     * @param string $password
+     * @param string $database
+     * @return bool
      */
     public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '') {
       $timestamp = microtime(true);
@@ -72,7 +72,7 @@ if (!class_exists('SQL', FALSE)) {
      * 获取出错信息
      * 返回数据格式：  {id:出错ID, error:出错描述}
      *
-     * @return {array}
+     * @return array
      */
     public static function error () {
       return array(
@@ -84,7 +84,7 @@ if (!class_exists('SQL', FALSE)) {
     /**
      * 返回出错代码
      *
-     * @return {int}
+     * @return int
      */
     public static function errno () {
       return mysql_errno();
@@ -93,7 +93,7 @@ if (!class_exists('SQL', FALSE)) {
     /**
      * 返回出错描述信息
      *
-     * @return {string}
+     * @return string
      */
     public static function errmsg () {
       return mysql_error();
@@ -103,8 +103,8 @@ if (!class_exists('SQL', FALSE)) {
      * 查询并返回所有数据
      * 格式为： [{字段名:值, 字段名:值 ...}, ...]，返回FALSE表示失败
      *
-     * @param {string} $sql
-     * @return {array}
+     * @param string $sql
+     * @return array
      */
     public static function getAll ($sql) {
       $timestamp = microtime(true);
@@ -127,8 +127,8 @@ if (!class_exists('SQL', FALSE)) {
     /**
      * 查询并返回一行数据 格式为 {字段名:值, 字段名:值 ...}，返回FALSE表示失败
      *
-     * @param {string} $sql
-     * @return {array}
+     * @param string $sql
+     * @return array
      */
     public static function getOne ($sql) {
       $sql .= ' LIMIT 1';
@@ -142,8 +142,8 @@ if (!class_exists('SQL', FALSE)) {
     /**
      * 执行SQL命令 返回影响的记录行数
      *
-     * @param {string} $sql
-     * @return {int}
+     * @param string $sql
+     * @return int
      */
     public static function update ($sql) {
       $timestamp = microtime(true);
@@ -162,7 +162,7 @@ if (!class_exists('SQL', FALSE)) {
     /**
      * 取最后插入ID
      *
-     * @return {int}
+     * @return int
      */
     public static function id () {
       return mysql_insert_id();
@@ -174,11 +174,11 @@ if (!class_exists('SQL', FALSE)) {
     /**
      * 转换为SQL安全字符串
      *
-     * @param {string} $str
-     * @return {string}
+     * @param string $str
+     * @return string
      */
     public static function escape ($str) {
-      return  mysql_escape_string($str);
+      return  mysql_real_escape_string($str);
     }
   }
 }
@@ -192,8 +192,8 @@ if (!class_exists('DEBUG', FALSE)) {
     /**
      * 添加到DEBUG流
      *
-     * @param {string} $msg
-     * @param {string} $title
+     * @param string $msg
+     * @param string $title
      */
     public static function put ($msg = '', $title = '') {
       if (defined('APP_DEBUG')) {
@@ -207,7 +207,7 @@ if (!class_exists('DEBUG', FALSE)) {
     /**
      * 获取DEBUG流
      *
-     * @return {string}
+     * @return string
      */
     public static function get () {
       return DEBUG::$stack;
@@ -216,7 +216,7 @@ if (!class_exists('DEBUG', FALSE)) {
     /**
      * 清空DEBUG流，并返回之前的信息
      *
-     * @return {string}
+     * @return string
      */
     public static function clear () {
       $ret = DEBUG::$stack;
@@ -235,8 +235,8 @@ if (!class_exists('UPLOAD', FALSE)) {
      * 获取上传文件
      * 返回格式：{name: 名称, type: 文件MIME类型, size: 大小, tmp_name: 临时文件名}
      *
-     * @param {string} $filename
-     * @return {array}
+     * @param string $filename
+     * @return array
      */
     public static function get ($filename) {
       if (isset($_FILES[$filename])) {
@@ -292,11 +292,63 @@ if (!class_exists('UPLOAD', FALSE)) {
 }
 
 class APP {
+
+  /**
+   * 加密解密函数 （来自Discuz!的authcode函数）
+   *
+   * @param string $string 明文 或 密文
+   * @param string $operation DECODE表示解密,其它表示加密
+   * @param string $key 密匙
+   * @param int $expiry 密文有效期
+   *
+   * @return string
+   */
+  public static function authcode($string, $operation = 'DECODE', $key = '', $expiry = 0) {
+    $ckey_length = 4;
+    $key = md5($key ? $key : 'leiphp-default-key');
+    $keya = md5(substr($key, 0, 16));
+    $keyb = md5(substr($key, 16, 16));
+    $keyc = $ckey_length ? ($operation == 'DECODE' ? substr($string, 0, $ckey_length): substr(md5(microtime()), -$ckey_length)) : '';
+    $cryptkey = $keya.md5($keya.$keyc);
+    $key_length = strlen($cryptkey);
+    $string = $operation == 'DECODE' ? base64_decode(substr($string, $ckey_length)) : sprintf('%010d', $expiry ? $expiry + time() : 0).substr(md5($string.$keyb), 0, 16).$string;
+    $string_length = strlen($string);
+    $result = '';
+    $box = range(0, 255);
+    $rndkey = array();
+    for($i = 0; $i <= 255; $i++) {
+      $rndkey[$i] = ord($cryptkey[$i % $key_length]);
+    }
+    for($j = $i = 0; $i < 256; $i++) {
+      $j = ($j + $box[$i] + $rndkey[$i]) % 256;
+      $tmp = $box[$i];
+      $box[$i] = $box[$j];
+      $box[$j] = $tmp;
+    }
+    for($a = $j = $i = 0; $i < $string_length; $i++) {
+      $a = ($a + 1) % 256;
+      $j = ($j + $box[$a]) % 256;
+      $tmp = $box[$a];
+      $box[$a] = $box[$j];
+      $box[$j] = $tmp;
+      $result .= chr(ord($string[$i]) ^ ($box[($box[$a] + $box[$j]) % 256]));
+    }
+    if($operation == 'DECODE') {
+      if((substr($result, 0, 10) == 0 || substr($result, 0, 10) - time() > 0) && substr($result, 10, 16) == substr(md5(substr($result, 26).$keyb), 0, 16)) {
+        return substr($result, 26);
+      } else {
+        return '';
+      }
+    } else {
+      return $keyc.str_replace('=', '', base64_encode($result));
+    }
+  }
+
   /**
    * 加密密码
    *
-   * @param {string} $password
-   * @return {string}
+   * @param string $password
+   * @return string
    */
   public static function encryptPassword ($password) {
     $random = strtoupper(md5(rand().rand()));
@@ -309,9 +361,9 @@ class APP {
   /**
    * 验证密码
    *
-   * @param {string} $password 待验证的密码
-   * @param {string} $encrypted 密码加密字符串
-   * @return {bool}
+   * @param string $password 待验证的密码
+   * @param string $encrypted 密码加密字符串
+   * @return bool
    */
   public static function validatePassword ($password, $encrypted) {
     $random = explode(':', strtoupper($encrypted));
@@ -326,7 +378,7 @@ class APP {
   /**
    * 显示出错信息
    *
-   * @param {string} $msg
+   * @param string $msg
    */
   public static function showError ($msg) {
     echo "<div style='color: #900;
@@ -341,11 +393,11 @@ class APP {
    * 载入模板
    * 如果指定了参数$layout，则会嵌套一个layout模板
    *
-   * @param {string} $name
-   * @param {array} $locals
-   * @param {string} $layout
+   * @param string $name
+   * @param array $locals
+   * @param string $layout
    */
-  public static function template ($name, $locals, $layout = '') {
+  public static function template ($name, $locals = array(), $layout = '') {
     if (!pathinfo($name, PATHINFO_EXTENSION)) {
       $name = $name.'.html';
     }
@@ -376,8 +428,8 @@ class APP {
    * 文件名如果不指定扩展名，则自动加上.php再加载
    * 如果以 / 开头，则从应用根目录开始查找
    *
-   * @param {string} $filename
-   * @return {mixed}
+   * @param string $filename
+   * @return mixed
    */
   public static function load ($filename) {
     if (!pathinfo($filename, PATHINFO_EXTENSION)) {
@@ -394,7 +446,7 @@ class APP {
   /**
    * 调试输出
    *
-   * @param {mixed} $var
+   * @param mixed $var
    */
   public static function dump ($var) {
     echo '<pre>';
@@ -416,6 +468,15 @@ class APP {
     }
     // 连接数据库
     if (defined('CONF_MYSQL_SERVER')) {
+      if (!defined('CONF_MYSQL_USER')) {
+        define('CONF_MYSQL_USER', 'root');
+      }
+      if (!defined('CONF_MYSQL_PASSWD')) {
+        define('CONF_MYSQL_PASSWD', '');
+      }
+      if (!defined('CONF_MYSQL_DBNAME')) {
+        define('CONF_MYSQL_DBNAME', '');
+      }
       SQL::connect(CONF_MYSQL_SERVER, CONF_MYSQL_USER, CONF_MYSQL_PASSWD, CONF_MYSQL_DBNAME);
     }
   }
