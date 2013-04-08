@@ -210,6 +210,10 @@ handle:
  - rewrite: if(!is_dir() && !is_file() && path~"^app/(.*)") goto "app/index.php?%{QUERY_STRING}&__path__=$1"
 ```
 
+当请求 `/app/my/action` 时，会自动执行文件 `/action/my/action.php`
+
+如请求 `/app/my/action/` ，则自动执行文件 `/action/my/action/index.php`
+
 
 授权
 ============
