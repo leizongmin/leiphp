@@ -75,6 +75,11 @@ function method_delete () {
   echo 'DELETE请求方法的处理代码';
 }
 
+// 定义处理PUT请求的代码
+function method_put () {
+  echo 'PUT请求方法的处理代码';
+}
+
 ?>
 ```
 
@@ -82,7 +87,7 @@ function method_delete () {
 操作MySQL数据库
 ===============
 
-leiphp中提供了一个静态类**SQL**来操作MySQL数据库：
+leiphp中提供了一个静态类 __SQL__ 来操作MySQL数据库：
 
 * `SQL::connect($server = 'localhost:3306', $username = 'root', $password = '', $database = '');` 连接到数据库，当配置了数据库连接时，leiapp会自动执行此方法来连接到数据库，若你的程序中已经通过`mysql_connect`来创建了一个数据库连接，可以不用再执行此方法连接数据库；
 
@@ -100,13 +105,37 @@ leiphp中提供了一个静态类**SQL**来操作MySQL数据库：
 
 * `SQL::escape($str)` 返回安全的SQL字符串
 
+更简便的数据库操作：
+
+* `SQL::getAll($table, $where)` 查询所有记录，其中$table是表名，$where是一个条件数组，如：array('id' => 1)
+
+* `SQL::getOne($table, $where)` 查询一条记录
+
+* `SQL::update($table, $where, $update)` 更新记录并返回受影响的记录数，其中$update是要更新的数据数组，如：array('name' => 'haha')
+
+* `SQL::insert($table, $data)` 插入一条记录并返回其ID，其中$data是一个数组，如：array('name' => 'haha', 'age' => 20)
+
+* `SQL::delete($table, $where)` 删除记录
+
+条件格式：
+
+* 普通：`array('a' => 1, 'b' => 2)` 相当于 `a=1 AND b=2`
+
+* 指定连接操作符：`array('link' => 'OR', 'a' => 1, 'b' => 2)` 相当于 `a=1 OR b=2`
+
+* 指定比较操作符：`array('a' => array('>' => 2))` 相当于 `a>2`
+
+* 同一个字段多个条件：`array('a' => array('>' => 2, '<' => 5))` 相当于 `(a>2 AND a < 5)`
+
+* 指定多个条件的连接操作符：`array('a' => array('link' => 'OR', '>' => 2, '<' => 5))` 相当于 `(a>2 OR a < 5)`
+
 
 上传文件操作
 ===============
 
-leiphp中提供了一个静态类**UPLOAD**来操作上传文件：
+leiphp中提供了一个静态类 __UPLOAD__ 来操作上传文件：
 
-* `UPLOAD::get($filename)` 返回指定名称的上传文件信息，该名称为`<form>`表单中的`<input type="file">`中的**name**值，该返回值为一个数组，包含以下项：**name**（名称），**type**（MIME类型），**size**（大小），**tmp_name**（临时文件名）；
+* `UPLOAD::get($filename)` 返回指定名称的上传文件信息，该名称为`<form>`表单中的`<input type="file">`中的**name**值，该返回值为一个数组，包含以下项： __name__ （名称）， __type__ （MIME类型）， __size__ （大小）， __tmp_name__ （临时文件名）；
 
 * `UPLOAD::move($file, $target)` 移动上传的文件到指定位置，第一个参数为`UPLOAD::get($filename)`的返回值，第二个参数为目标文件名；
 
@@ -114,15 +143,19 @@ leiphp中提供了一个静态类**UPLOAD**来操作上传文件：
 调试信息操作
 =============
 
-leiphp中提供了一个静态类**DEBUG**来操作调试信息，当定义了常量`APP_DEBUG`时，会在页面底部输出调试信息：
+leiphp中提供了一个静态类 __DEBUG__ 来操作调试信息，当定义了常量`APP_DEBUG`时，会在页面底部输出调试信息：
 
 * `DEBUG::put($msg = '', $title = '')` 输出调试信息
+
+* `DEBUG::get()` 取调试信息
+
+* `DEBUG::clear()` 清除所有调试信息
 
 
 应用相关操作
 =============
 
-leiphp中提供了一个静态类**APP**来进行应用相关的操作，及一些公共函数：
+leiphp中提供了一个静态类 __APP__ 来进行应用相关的操作，及一些公共函数：
 
 * `APP::encryptPassword ($password)` 加密密码，返回一个加盐处理后的MD5字符串，如：`FF:15855D447208A6AB4BD2CC88D4B91732:83`；
 
@@ -130,11 +163,52 @@ leiphp中提供了一个静态类**APP**来进行应用相关的操作，及一�
 
 * `APP::dump($var)` 打印变量结构，一般用于调试；
 
+* `APP::showError($msg)` 显示出错信息
+
 * `APP::load($filename)` 载入依赖的php文件，若不指定后缀名，会自动加上`.php`，默认以当前php文件为根目录，若文件名以`/`开头，则以常量`APP_ROOT`定义的应用目录作为根目录；
+
+* `APP::sendJSON($data)` 返回JSON格式数据
 
 * `APP::template($name, $locals, $layout = '')` 载入模板文件，若不指定后缀名，会自动加上`.html`，以常量`APP_TEMPLATE_ROOT`定义的模板目录作为根目录，模板文件实际上为php程序文件，第二个参数为模板中可用的变量，在模板中通过`$locals`来读取，第三个参数为布局模板，默认不使用布局模板，若指定了布局模板，则需要在布局模板中通过变量`$body`来获取当前模板的内容，如：`<?php echo $body; ?>`；
 
+* `APP::setLocals($name, $value)` 设置模板变量
+
+* `APP::getLocals($name)` 取模板变量值
+
+* `APP::render($name, $locals, $layout = '')` 渲染模板（同`APP::template()`，但是会加上用`APP::setLocals()`设置的变量）
+
 * `APP::init()` 初始化leiphp；
+
+* `APP::end()` 提前退出
+
+自动路由
+===========
+
+leiphp中提供了一个静态类 __ROUTER__ 来进行路由相关的操作：
+
+* `ROUTER::register($path, $function, $is_preg = false)` 注册中间件，其中$path为路径前缀，$function为要执行的函数，如果$is_preg为true表示$path是一个正则表达式
+
+* `ROUTER::run($dir, $path)` 执行自动路由。其中$dir是要自动加载的PHP文件所在的目录，以应用目录APP_ROOT中定义的目录为根目录，默认为action目录，$path是当前请求的路径，默认为`$_GET['__path__']`
+
+示例：
+
+应用统一入口文件：index.php
+
+```php
+<?php
+require('config.inc.php');
+ROUTER::run('action', @$_GET['__path__']);
+?>
+```
+
+需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到 `/app/index.php?__path=$1`
+
+以下是yaml格式的配置示例：
+
+```yaml
+handle:
+ - rewrite: if(!is_dir() && !is_file() && path~"^app/(.*)") goto "app/index.php?%{QUERY_STRING}&__path__=$1"
+```
 
 
 授权

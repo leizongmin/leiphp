@@ -11,6 +11,8 @@ define('APP_TIMESTAMP_START', microtime(true));
 
 /* 处理不同的请求方法 */
 function _leiphp_request_method_router () {
+  if (APP::$is_exit) return;
+
   $method = strtolower($_SERVER['REQUEST_METHOD']);
   $funcname = "method_$method";
   define('APP_TIMESTAMP_ROUTE', microtime(true));
@@ -24,7 +26,7 @@ function _leiphp_request_method_router () {
   }
 
   $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
-  if (defined('APP_DEBUG') && substr($accept_type, 0, 9) == 'text/html') {
+  if (defined('APP_DEBUG') && APP_DEBUG && substr($accept_type, 0, 9) == 'text/html') {
     $spent2 = round((microtime(true) - APP_TIMESTAMP_ROUTE) * 1000, 3);
     $spent = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3);
     $debug = DEBUG::clear();
@@ -46,7 +48,7 @@ register_shutdown_function('_leiphp_request_method_router');
 /**
  * MySQL 数据库操作
  */
-if (!class_exists('SQL', FALSE)) {
+if (!class_exists('SQL', false)) {
   class SQL {
     /**
      * 连接到数据库
@@ -101,39 +103,43 @@ if (!class_exists('SQL', FALSE)) {
 
     /**
      * 查询并返回所有数据
-     * 格式为： [{字段名:值, 字段名:值 ...}, ...]，返回FALSE表示失败
+     * 格式为： [{字段名:值, 字段名:值 ...}, ...]，返回false表示失败
      *
      * @param string $sql
      * @return array
      */
-    public static function getAll ($sql) {
+    public static function getAll ($sql, $where = null) {
+      if (is_array($where)) return SQL::getAll2($sql, $where);
+
       $timestamp = microtime(true);
       $r = mysql_query($sql);
       if (mysql_errno()) {
         DEBUG::put('Query: '.$sql.' fail: #'.mysql_errno(), 'MySQL');
-        return FALSE;
+        return false;
       }
       $data = array();
       while ($row = mysql_fetch_array($r, MYSQL_ASSOC)) {
         $data[] = $row;
       }
       DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
-      return count($data) < 1 ? FALSE : $data;
+      return count($data) < 1 ? false : $data;
     }
     public static function getData ($sql) {
       return SQL::getAll($sql);
     }
 
     /**
-     * 查询并返回一行数据 格式为 {字段名:值, 字段名:值 ...}，返回FALSE表示失败
+     * 查询并返回一行数据 格式为 {字段名:值, 字段名:值 ...}，返回false表示失败
      *
      * @param string $sql
      * @return array
      */
-    public static function getOne ($sql) {
+    public static function getOne ($sql, $where = null) {
+      if (is_array($where)) return SQL::getOne2($sql, $where);
+      
       $sql .= ' LIMIT 1';
       $data = SQL::getAll($sql);
-      return $data == FALSE ? FALSE : $data[0];
+      return $data == false ? false : $data[0];
     }
     public static function getLine ($sql) {
       return SQL::getOne($sql);
@@ -145,7 +151,9 @@ if (!class_exists('SQL', FALSE)) {
      * @param string $sql
      * @return int
      */
-    public static function update ($sql) {
+    public static function update ($sql, $where = null, $update = null) {
+      if (is_array($where) && is_array($update)) return SQL::update2($sql, $where, $update);
+
       $timestamp = microtime(true);
       mysql_query($sql);
       if (mysql_errno()) {
@@ -156,7 +164,145 @@ if (!class_exists('SQL', FALSE)) {
       return mysql_affected_rows();
     }
     public static function runSql ($sql) {
-      return SQL::runSql($sql);
+      return SQL::update($sql);
+    }
+
+    /**
+     * 插入记录
+     *
+     * @param string $table
+     * @param array $data
+     * @return int
+     */
+    public static function insert ($table, $data) {
+      if (!(is_array($data) && count($data) > 0)) return false;
+
+      $table = SQL::escape($table);
+      $fields = array();
+      $values = array();
+      foreach ($data as $f => $v) {
+        $fields[] = '`'.SQL::escape($f).'`';
+        $values[] = '\''.SQL::escape($v).'\'';
+      }
+      $fields = implode(', ', $fields);
+      $values = implode(', ', $values);
+      $sql = "INSERT INTO `$table` ($fields) VALUES ($values)";
+      return SQL::update($sql) > 0 ? SQL::id() : false;
+    }
+
+    /**
+     * 解析where条件
+     *
+     * @param array $where 例如： array(
+     *                              'field' => 'values',
+     *                              'link' =>  'OR'  // 可省略，默认为AND
+     *                            )
+     *                            array('field' => array(
+     *                              'link' => 'OR', // 可省略，默认为AND
+     *                              '>' =>    1200,
+     *                              '<=' =>   555
+     *                            ))
+     * @return string
+     */
+    public static function _parseWhere ($where) {
+      $items = array();
+      $link = 'AND';
+      foreach ($where as $f => $v) {
+        if (strtolower($f) == 'link') {
+          $link = strtoupper($v);
+          continue;
+        }
+        $f = SQL::escape($f);
+        if (is_array($v)) {
+          $items2 = array();
+          $link2 = 'AND';
+          foreach ($v as $op1 => $op2) {
+            if (strtolower($op1) == 'link') {
+              $link2 = strtoupper($op2);
+              continue;
+            }
+            $op2 = SQL::escape($op2);
+            $items2[] = "`$f`$op1'$op2'";
+          }
+          $items[] = '('.implode(" $link2 ", $items2).')';
+        } else {
+          $v = SQL::escape($v);
+          $items[] = "`$f`='$v'";
+        }
+      }
+      return implode(" $link ", $items);
+    }
+
+    /**
+     * 更新记录
+     *
+     * @param string $table
+     * @param array $where
+     * @param array $update
+     * @return int
+     */
+    public static function update2 ($table, $where, $update) {
+      if (!(is_array($where) && count($where) > 0 && is_array($update) && count($update) > 0)) return false;
+
+      $table = SQL::escape($table);
+      $set = array();
+      foreach ($update as $f => $v) {
+        $f = SQL::escape($f);
+        $v = SQL::escape($v);
+        $set[] = "`$f`='$v'";
+      }
+      $set = implode(', ', $set);
+      $where = SQL::_parseWhere($where);
+      $sql = "UPDATE `$table` SET $set WHERE $where";
+      return SQL::update($sql);
+    }
+
+    /**
+     * 删除记录
+     *
+     * @param string $table
+     * @param array $where
+     * @return int
+     */
+    public static function delete ($table, $where) {
+      if (!is_array($where) && count($where) > 0) return false;
+
+      $table = SQL::escape($table);
+      $where = SQL::_parseWhere($where);
+      $sql = "DELETE FROM `$table` WHERE $where";
+      return SQL::update($sql);
+    }
+
+    /**
+     * 查询一条记录
+     * 
+     * string $table
+     * @param array $where
+     * @return array
+     */
+    public static function getOne2 ($table, $where) {
+      if (!is_array($where) && count($where) > 0) return false;
+
+      $table = SQL::escape($table);
+      $where = SQL::_parseWhere($where);
+      $sql = "SELECT * FROM `$table` WHERE $where";
+      return SQL::getAll($sql);
+    }
+
+    /**
+     * 查询记录
+     * 
+     * string $table
+     * @param array $where
+     * @return array
+     */
+    public static function getAll2 ($table, $where) {
+      if (!is_array($where) && count($where) > 0) return false;
+
+      $table = SQL::escape($table);
+      $where = SQL::_parseWhere($where);
+      $sql = "SELECT * FROM `$table` WHERE $where";
+      return SQL::getAll($sql);
     }
 
     /**
@@ -185,7 +331,7 @@ if (!class_exists('SQL', FALSE)) {
 /**
  * 调试信息流操作
  */
-if (!class_exists('DEBUG', FALSE)) {
+if (!class_exists('DEBUG', false)) {
   class DEBUG {
     public static $stack = '';
 
@@ -229,7 +375,7 @@ if (!class_exists('DEBUG', FALSE)) {
 /**
  * 上传文件管理
  */
-if (!class_exists('UPLOAD', FALSE)) {
+if (!class_exists('UPLOAD', false)) {
   class UPLOAD {
     /**
      * 获取上传文件
@@ -291,7 +437,92 @@ if (!class_exists('UPLOAD', FALSE)) {
   }
 }
 
+if (!class_exists('ROUTER', false)) {
+  class ROUTER {
+
+    // 中间件列表
+    public static $_list = array();
+
+    /**
+     * 开始自动路由
+     *
+     * @param string $dir  目录，默认为 action 表示应用目录下的action目录
+     * @param string $path 路径，默认使用 $_GET['__path__']，如为空则为 /
+     */
+    public static function run ($dir = 'action', $path = '_____NORMAL_____') {
+      // 目录不能以/开头及结尾
+      if (substr($dir, 0, 1) == '/') $dir = substr($dir, 1);
+      if (substr($dir, -1) == '/') $dir = substr($dir, strlen($dir) - 1);
+      // 路径必须以/开头，但不能以/结尾
+      if ($path == '_____NORMAL_____') $path = @$_GET['__path__'];
+      if (empty($path)) $path = '/';
+      if (substr($path, 0, 1) != '/') $path = '/'.$path;
+      if ($path != '/' && substr($path, -1) == '/') $path = substr($path, strlen($path) - 1);
+
+      // 中间件处理
+      ROUTER::runMiddleware($path);
+
+      $filename = APP_ROOT.$dir.$path.(substr($path, -1) == '/' ? '/index' : '').'.php';
+      DEBUG::put("path=$path, file=$filename", 'Router');
+      if (file_exists($filename)) {
+        require($filename);
+      } else {
+        ROUTER::notFound($path, $filename);
+      }
+    }
+
+    /**
+     * 路由未找到
+     */
+    public static function notFound ($path, $filename) {
+      @header("HTTP/1.1 404 Not Found");
+      APP::showError("Path \"$path\" Not Found.");
+      DEBUG::put("Not found: path=$path, file=$filename", 'Router');
+    }
+
+    /**
+     * 注册中间件
+     *
+     * @param string $path        路径
+     * @param callback $function  要执行的函数
+     * @param bool $is_preg       路径是否为正则表达式，默认为false
+     */
+    public static function register ($path, $function, $is_preg = false) {
+      ROUTER::$_list[] = array($path, $function, $is_preg);
+      DEBUG::put("Use: $path => $function", 'Router');
+    }
+
+    /**
+     * 执行中间件
+     *
+     * @param string $path
+     */
+    public static function runMiddleware ($path) {
+      $pathlen = strlen($path);
+      foreach (ROUTER::$_list as $i => $v) {
+        $p = $v[0];
+        $f = $v[1];
+        $is_preg = $v[2];
+        if ($is_preg) {
+          if (!preg_match($p, $path)) continue;
+        } else {
+          $pl = strlen($p);
+          if ($pl > $pathlen) continue;
+          if (substr($path, 0, $pl) != $p) continue;
+        }
+        @call_user_func($f, $path);
+      }
+    }
+  }
+}
+
 class APP {
+
+  // 是否提前退出
+  public static $is_exit = false;
+
+  // 模板变量
+  public static $locals = array();
 
   /**
    * 加密解密函数 （来自Discuz!的authcode函数）
@@ -367,7 +598,7 @@ class APP {
    */
   public static function validatePassword ($password, $encrypted) {
     $random = explode(':', strtoupper($encrypted));
-    if (count($random) < 3) return FALSE;
+    if (count($random) < 3) return false;
     $left = $random[0];
     $right = $random[2];
     $main = $random[1];
@@ -421,6 +652,54 @@ class APP {
         DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
       }
     }
+  }
+
+  /**
+   * 渲染模板，自动使用APP::$locals中的数据
+   * 如果指定了参数$layout，则会嵌套一个layout模板
+   *
+   * @param string $name
+   * @param array $locals
+   * @param string $layout
+   */
+  public static function render ($name, $locals = array(), $layout = '') {
+    foreach (APP::$locals as $i => $v) {
+      if (!isset($locals[$i])) $locals[$i] = $v;
+    }
+    APP::template($name, $locals, $layout);
+  }
+
+  /**
+   * 设置模板变量
+   *
+   * @param string $name
+   * @param mixed $value
+   * @return mixed
+   */
+  public static function setLocals ($name, $value = null) {
+    APP::$locals[$name] = $value;
+    return @APP::$locals[$name];
+  }
+
+  /**
+   * 取模板变量
+   *
+   * @param string $name
+   * @return mixed
+   */
+  public static function getLocals ($name) {
+    return @APP::$locals[$name];
+  }
+
+  /**
+   * 返回JSON格式数据
+   *
+   * @param mixed $data
+   */
+  public static function sendJSON ($data = null) {
+    @header('content-type: application/json');
+    echo json_encode($data);
+    APP::end();
   }
 
   /**
@@ -479,5 +758,13 @@ class APP {
       }
       SQL::connect(CONF_MYSQL_SERVER, CONF_MYSQL_USER, CONF_MYSQL_PASSWD, CONF_MYSQL_DBNAME);
     }
+  }
+
+  /**
+   * 提前退出
+   */
+  public static function end () {
+    APP::$is_exit = true;
+    die;
   }
 }
