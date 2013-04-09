@@ -308,7 +308,7 @@ if (!class_exists('SQL', false)) {
       $table = SQL::escape($table);
       $where = SQL::_parseWhere($where);
       $sql = "SELECT * FROM `$table` WHERE $where";
-      return SQL::getAll($sql);
+      return SQL::getOne($sql);
     }
 
     /**
