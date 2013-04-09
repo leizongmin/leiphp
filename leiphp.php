@@ -6,13 +6,11 @@
  * @version 0.1
  */
 
-// 开始时间
-define('APP_TIMESTAMP_START', microtime(true));
-
 /* 处理不同的请求方法 */
 function _leiphp_request_method_router () {
   if (APP::$is_exit) return;
 
+  // 执行相应的请求方法
   $method = strtolower($_SERVER['REQUEST_METHOD']);
   $funcname = "method_$method";
   define('APP_TIMESTAMP_ROUTE', microtime(true));
@@ -25,8 +23,9 @@ function _leiphp_request_method_router () {
     $funcname = 'method_undefine';
   }
 
+  // 显示调试信息
   $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
-  if (defined('APP_DEBUG') && APP_DEBUG && substr($accept_type, 0, 9) == 'text/html') {
+  if (APP::$is_debug && substr($accept_type, 0, 9) == 'text/html') {
     $spent2 = round((microtime(true) - APP_TIMESTAMP_ROUTE) * 1000, 3);
     $spent = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3);
     $debug = DEBUG::clear();
@@ -42,7 +41,6 @@ function _leiphp_request_method_router () {
 </div>";
   }
 }
-register_shutdown_function('_leiphp_request_method_router');
 
 
 /**
@@ -50,6 +48,9 @@ register_shutdown_function('_leiphp_request_method_router');
  */
 if (!class_exists('SQL', false)) {
   class SQL {
+
+    public static $connection = false;
+
     /**
      * 连接到数据库
      * 成功返回true, 失败返回false
@@ -102,6 +103,25 @@ if (!class_exists('SQL', false)) {
     }
 
     /**
+     * 执行SQL语句
+     *
+     * @param string $sql
+     * @return resource
+     */
+    public static function query ($sql) {
+      if (!SQL::$connection) {
+        // 自动连接数据库
+        $server = defined('CONF_MYSQL_SERVER') ? CONF_MYSQL_SERVER : 'localhost:3306';
+        $user = defined('CONF_MYSQL_USER') ? CONF_MYSQL_USER : 'root';
+        $passwd = defined('CONF_MYSQL_PASSWD') ? CONF_MYSQL_PASSWD : '';
+        $dbname = defined('CONF_MYSQL_DBNAME') ? CONF_MYSQL_DBNAME : '';
+        $r = SQL::connect($server, $user, $passwd, $dbname);
+        if ($r) SQL::$connection = $r;
+      }
+      return mysql_query($sql);
+    }
+
+    /**
      * 查询并返回所有数据
      * 格式为： [{字段名:值, 字段名:值 ...}, ...]，返回false表示失败
      *
@@ -112,9 +132,9 @@ if (!class_exists('SQL', false)) {
       if (is_array($where)) return SQL::getAll2($sql, $where);
 
       $timestamp = microtime(true);
-      $r = mysql_query($sql);
-      if (mysql_errno()) {
-        DEBUG::put('Query: '.$sql.' fail: #'.mysql_errno(), 'MySQL');
+      $r = SQL::query($sql);
+      if (SQL::errno()) {
+        DEBUG::put('Query: '.$sql.' fail: #'.SQL::errno(), 'MySQL');
         return false;
       }
       $data = array();
@@ -155,9 +175,9 @@ if (!class_exists('SQL', false)) {
       if (is_array($where) && is_array($update)) return SQL::update2($sql, $where, $update);
 
       $timestamp = microtime(true);
-      mysql_query($sql);
-      if (mysql_errno()) {
-        DEBUG::put('Query: '.$sql.' fail: #'.mysql_errno(), 'MySQL');
+      SQL::query($sql);
+      if (SQL::errno()) {
+        DEBUG::put('Query: '.$sql.' fail: #'.SQL::errno(), 'MySQL');
       } else {
         DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
       }
@@ -342,7 +362,7 @@ if (!class_exists('DEBUG', false)) {
      * @param string $title
      */
     public static function put ($msg = '', $title = '') {
-      if (defined('APP_DEBUG')) {
+      if (APP::$is_debug) {
         if (!empty($title)) {
           $msg = '['.$title.'] '.$msg;
         }
@@ -521,11 +541,14 @@ class APP {
   // 是否提前退出
   public static $is_exit = false;
 
+  // 是否为调试状态
+  public static $is_debug = false;
+
   // 模板变量
   public static $locals = array();
 
   /**
-   * 加密解密函数 （来自Discuz!的authcode函数）
+   * 账户验证加密解密函数 （来自Discuz!的authcode函数）
    *
    * @param string $string 明文 或 密文
    * @param string $operation DECODE表示解密,其它表示加密
@@ -576,6 +599,29 @@ class APP {
   }
 
   /**
+   * 加密账户验证信息
+   *
+   * @param string $string  要加密的字符串
+   * @param string $key     密匙
+   * @param int $expiry     从现在起的有效时间（秒）
+   * @return string
+   */
+  public static function authEncode ($string, $key, $expiry = 0) {
+    return APP::authcode($string, 'ENCODE', $key, $expiry);
+  }
+
+  /**
+   * 解密账户验证信息
+   *
+   * @param string $string  密文
+   * @param string $key     密匙
+   * @return string
+   */
+  public static function authDecode ($string, $key) {
+    return APP::authcode($string, 'DECODE', $key);
+  }
+
+  /**
    * 加密密码
    *
    * @param string $password
@@ -612,12 +658,17 @@ class APP {
    * @param string $msg
    */
   public static function showError ($msg) {
-    echo "<div style='color: #900;
-  font-size: 16px;
-  border: 1px solid #900;
-  padding: 8px 12px;
-  border-radius: 5px;
-  margin: 12px 0px;'>$msg</div>";
+    $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
+    if (strpos($accept_type, 'json') !== false) {
+      APP::sendJSON(array('error' => $msg));
+    } else {
+      echo "<div style='color: #900;
+            font-size: 16px;
+            border: 1px solid #900;
+            padding: 8px 12px;
+            border-radius: 5px;
+            margin: 12px 0px;'>$msg</div>";
+    }
   }
 
   /**
@@ -703,6 +754,17 @@ class APP {
   }
 
   /**
+   * 返回JSON格式的出错信息
+   *
+   * @param string $msg   出错信息
+   * @param array $data   其他数据
+   */
+  public static function sendError ($msg, $data = array()) {
+    $data['error'] = $msg;
+    APP::sendJSON($data);
+  }
+
+  /**
    * 加载文件
    * 文件名如果不指定扩展名，则自动加上.php再加载
    * 如果以 / 开头，则从应用根目录开始查找
@@ -738,26 +800,18 @@ class APP {
    */
   public static function init () {
     // 是否关闭出错显示
-    if (defined('APP_DEBUG')) {
+    if (defined('APP_DEBUG') && APP_DEBUG) {
+      APP::$is_debug = true;
       error_reporting(E_ALL);
       ini_set('display_errors', '1');
     } else {
       error_reporting(0);
       ini_set('display_errors', '0');
     }
-    // 连接数据库
-    if (defined('CONF_MYSQL_SERVER')) {
-      if (!defined('CONF_MYSQL_USER')) {
-        define('CONF_MYSQL_USER', 'root');
-      }
-      if (!defined('CONF_MYSQL_PASSWD')) {
-        define('CONF_MYSQL_PASSWD', '');
-      }
-      if (!defined('CONF_MYSQL_DBNAME')) {
-        define('CONF_MYSQL_DBNAME', '');
-      }
-      SQL::connect(CONF_MYSQL_SERVER, CONF_MYSQL_USER, CONF_MYSQL_PASSWD, CONF_MYSQL_DBNAME);
-    }
+    // 开始时间
+    define('APP_TIMESTAMP_START', microtime(true));
+    // 自动执行 method_VERB
+    register_shutdown_function('_leiphp_request_method_router');
   }
 
   /**
