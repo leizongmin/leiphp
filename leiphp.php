@@ -30,14 +30,19 @@ function _leiphp_request_method_router () {
     $spent = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3);
     $debug = DEBUG::clear();
     echo "<div style='
-    font-size: 12px;
-    line-height: 1.6em;
-    text-align: left;
-    color: #666;
-    padding: 12px 4px;
-    border: 1px solid #DDD;
+      font-size: 14px;
+      line-height: 1.6em;
+      text-align: left;
+      color: #000;
+      padding: 12px 8px;
+      border: 1px solid #DDD;
+      font-family: \"Microsoft yahei\", \"Helvetica Neue\", \"Lucida Grande\", \"Lucida Sans Unicode\", Helvetica, Arial, sans-serif !important;
+      background-color: #EEE;
+      margin-top: 50px;
 '>Debug<br>Function $funcname spent: {$spent2}ms<br>Total spent: {$spent}ms<br>
-<hr><pre>$debug</pre>
+<hr><pre style='
+      font-family: \"Microsoft yahei\", \"Helvetica Neue\", \"Lucida Grande\", \"Lucida Sans Unicode\", Helvetica, Arial, sans-serif !important;
+'>$debug</pre>
 </div>";
   }
 }
@@ -49,7 +54,8 @@ function _leiphp_request_method_router () {
 if (!class_exists('SQL', false)) {
   class SQL {
 
-    public static $connection = false;
+    // 当前数据库连接
+    public static $connection = null;
 
     /**
      * 连接到数据库
@@ -59,15 +65,20 @@ if (!class_exists('SQL', false)) {
      * @param string $username
      * @param string $password
      * @param string $database
+     * @param bool $permanent  是否永久连接
      * @return bool
      */
-    public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '') {
+    public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '', $permanent = true) {
       $timestamp = microtime(true);
-      mysql_connect($server, $username, $password);
-      $r = mysql_select_db($database);
-      DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
-      // 设置默认字符集为utf-8
-      // SQL::update('set names utf8');
+
+      if ($permanent) {
+        SQL::$connection = mysql_pconnect($server, $username, $password);
+      } else {
+        SQL::$connection = mysql_connect($server, $username, $password);
+      }
+
+      $r = mysql_select_db($database, SQL::$connection);
+      DEBUG::put('Connected: '.$username.'@'.$server.' permanent='.$permanent.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
       return $r;
     }
 
@@ -109,16 +120,7 @@ if (!class_exists('SQL', false)) {
      * @return resource
      */
     public static function query ($sql) {
-      if (!SQL::$connection) {
-        // 自动连接数据库
-        $server = defined('CONF_MYSQL_SERVER') ? CONF_MYSQL_SERVER : 'localhost:3306';
-        $user = defined('CONF_MYSQL_USER') ? CONF_MYSQL_USER : 'root';
-        $passwd = defined('CONF_MYSQL_PASSWD') ? CONF_MYSQL_PASSWD : '';
-        $dbname = defined('CONF_MYSQL_DBNAME') ? CONF_MYSQL_DBNAME : '';
-        $r = SQL::connect($server, $user, $passwd, $dbname);
-        if ($r) SQL::$connection = $r;
-      }
-      return mysql_query($sql);
+      return mysql_query($sql, SQL::$connection);
     }
 
     /**
@@ -364,9 +366,10 @@ if (!class_exists('DEBUG', false)) {
     public static function put ($msg = '', $title = '') {
       if (APP::$is_debug) {
         if (!empty($title)) {
-          $msg = '['.$title.'] '.$msg;
+          $msg = "[$title] $msg";
         }
-        DEBUG::$stack .= $msg."\r\n";
+        $timestamp = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3).'ms';
+        DEBUG::$stack .= "[$timestamp] $msg\r\n";
       }
     }
 
@@ -749,6 +752,7 @@ class APP {
    */
   public static function sendJSON ($data = null) {
     @header('content-type: application/json');
+    if (is_array($data) && APP::$is_debug) $data['debug'] = DEBUG::get();
     echo json_encode($data);
     APP::end();
   }
@@ -808,8 +812,21 @@ class APP {
       error_reporting(0);
       ini_set('display_errors', '0');
     }
+
     // 开始时间
     define('APP_TIMESTAMP_START', microtime(true));
+    
+    // 只要定义了数据库配置中的任一项均自动连接数据库
+    if (defined('CONF_MYSQL_SERVER') || defined('CONF_MYSQL_USER') ||
+        defined('CONF_MYSQL_PASSWD') || defined('CONF_MYSQL_DBNAME')) {
+      $server = defined('CONF_MYSQL_SERVER') ? CONF_MYSQL_SERVER : 'localhost:3306';
+      $user = defined('CONF_MYSQL_USER') ? CONF_MYSQL_USER : 'root';
+      $passwd = defined('CONF_MYSQL_PASSWD') ? CONF_MYSQL_PASSWD : '';
+      $dbname = defined('CONF_MYSQL_DBNAME') ? CONF_MYSQL_DBNAME : '';
+      $permanent = defined('CONF_MYSQL_PERMANENT') ? CONF_MYSQL_PERMANENT : false;
+      SQL::connect($server, $user, $passwd, $dbname, $permanent);
+    }
+
     // 自动执行 method_VERB
     register_shutdown_function('_leiphp_request_method_router');
   }

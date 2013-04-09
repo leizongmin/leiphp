@@ -31,6 +31,7 @@ define('CONF_MYSQL_SERVER', 'localhost:3306');  // 服务器，默认为 localho
 define('CONF_MYSQL_USER',   'root');            // 用户名，默认为 root
 define('CONF_MYSQL_PASSWD', '123456');          // 密码，默认为空
 define('CONF_MYSQL_DBNAME', 'test');            // 数据库名，默认为空
+define('CONF_MYSQL_PERMANENT', false);          // 使用使用永久连接，默认false
 
 
 // 载入leiphp并初始化
