@@ -23,6 +23,9 @@ function _leiphp_request_method_router () {
     $funcname = 'method_undefine';
   }
 
+  // 如果为非永久连接，则自动关闭数据库连接
+  if (!SQL::$is_permanent) @SQL::close();
+
   // 显示调试信息
   $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
   if (APP::$is_debug && substr($accept_type, 0, 9) == 'text/html') {
@@ -57,6 +60,9 @@ if (!class_exists('SQL', false)) {
     // 当前数据库连接
     public static $connection = null;
 
+    // 是否为永久连接
+    public static $is_permanent = false;
+
     /**
      * 连接到数据库
      * 成功返回true, 失败返回false
@@ -76,6 +82,7 @@ if (!class_exists('SQL', false)) {
       } else {
         SQL::$connection = mysql_connect($server, $username, $password);
       }
+      SQL::$is_permanent = $permanent;
 
       $r = mysql_select_db($database, SQL::$connection);
       DEBUG::put('Connected: '.$username.'@'.$server.' permanent='.$permanent.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
@@ -90,8 +97,8 @@ if (!class_exists('SQL', false)) {
      */
     public static function error () {
       return array(
-        'id'  =>  mysql_errno(),
-        'error' =>  mysql_error()
+        'id'  =>    SQL::errno(),
+        'error' =>  SQL::errmsg()
         );
     }
 
@@ -101,7 +108,7 @@ if (!class_exists('SQL', false)) {
      * @return int
      */
     public static function errno () {
-      return mysql_errno();
+      return mysql_errno(SQL::$connection);
     }
 
     /**
@@ -110,7 +117,7 @@ if (!class_exists('SQL', false)) {
      * @return string
      */
     public static function errmsg () {
-      return mysql_error();
+      return mysql_error(SQL::$connection);
     }
 
     /**
@@ -120,7 +127,15 @@ if (!class_exists('SQL', false)) {
      * @return resource
      */
     public static function query ($sql) {
-      return mysql_query($sql, SQL::$connection);
+      $timestamp = microtime(true);
+      $r = mysql_query($sql, SQL::$connection);
+      $spent = round((microtime(true) - $timestamp) * 1000, 3);
+      if ($r) {
+        DEBUG::put('Query: '.$sql.' spent: '.$spent.'ms', 'MySQL');
+      } else {
+        DEBUG::put('Query: '.$sql.' fail: #'.SQL::errno().' '.SQL::errmsg().' spent: '.$spent, 'MySQL');
+      }
+      return $r;
     }
 
     /**
@@ -133,17 +148,12 @@ if (!class_exists('SQL', false)) {
     public static function getAll ($sql, $where = null) {
       if (is_array($where)) return SQL::getAll2($sql, $where);
 
-      $timestamp = microtime(true);
       $r = SQL::query($sql);
-      if (SQL::errno()) {
-        DEBUG::put('Query: '.$sql.' fail: #'.SQL::errno(), 'MySQL');
-        return false;
-      }
+      if (!$r) return fasle;
       $data = array();
       while ($row = mysql_fetch_array($r, MYSQL_ASSOC)) {
         $data[] = $row;
       }
-      DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
       return count($data) < 1 ? false : $data;
     }
     public static function getData ($sql) {
@@ -176,14 +186,9 @@ if (!class_exists('SQL', false)) {
     public static function update ($sql, $where = null, $update = null) {
       if (is_array($where) && is_array($update)) return SQL::update2($sql, $where, $update);
 
-      $timestamp = microtime(true);
-      SQL::query($sql);
-      if (SQL::errno()) {
-        DEBUG::put('Query: '.$sql.' fail: #'.SQL::errno(), 'MySQL');
-      } else {
-        DEBUG::put('Query: '.$sql.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
-      }
-      return mysql_affected_rows();
+      $r = SQL::query($sql);
+      if (!$r) return false;
+      return mysql_affected_rows(SQL::$connection);
     }
     public static function runSql ($sql) {
       return SQL::update($sql);
@@ -333,7 +338,7 @@ if (!class_exists('SQL', false)) {
      * @return int
      */
     public static function id () {
-      return mysql_insert_id();
+      return mysql_insert_id(SQL::$connection);
     }
     public static function lastId () {
       return SQL::id();
@@ -346,7 +351,15 @@ if (!class_exists('SQL', false)) {
      * @return string
      */
     public static function escape ($str) {
-      return  mysql_real_escape_string($str);
+      return  mysql_real_escape_string($str, SQL::$connection);
+    }
+
+    /**
+     * 关闭SQL连接
+     */
+    public static function close () {
+      DEBUG::put('Close connection.', 'MySQL');
+      return @mysql_close(SQL::$connection);
     }
   }
 }
