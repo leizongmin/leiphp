@@ -8,6 +8,7 @@
 
 /* 处理不同的请求方法 */
 function _leiphp_request_method_router () {
+  // 如果已调用APP::end()，则不再执行此函数，因为在die后仍然会执行register_shutdown_function注册的函数
   if (APP::$is_exit) return;
 
   // 执行相应的请求方法
@@ -50,6 +51,50 @@ function _leiphp_request_method_router () {
   }
 }
 
+/**
+ * 调试信息流操作
+ */
+if (!class_exists('DEBUG', false)) {
+  class DEBUG {
+    public static $stack = '';
+
+    /**
+     * 添加到DEBUG流
+     *
+     * @param string $msg
+     * @param string $title
+     */
+    public static function put ($msg = '', $title = '') {
+      if (APP::$is_debug) {
+        if (!empty($title)) {
+          $msg = "[$title] $msg";
+        }
+        $timestamp = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3).'ms';
+        DEBUG::$stack .= "[$timestamp] $msg\r\n";
+      }
+    }
+
+    /**
+     * 获取DEBUG流
+     *
+     * @return string
+     */
+    public static function get () {
+      return DEBUG::$stack;
+    }
+
+    /**
+     * 清空DEBUG流，并返回之前的信息
+     *
+     * @return string
+     */
+    public static function clear () {
+      $ret = DEBUG::$stack;
+      DEBUG::$stack = '';
+      return $ret;
+    }
+  }
+}
 
 /**
  * MySQL 数据库操作
@@ -362,50 +407,8 @@ if (!class_exists('SQL', false)) {
       return @mysql_close(SQL::$connection);
     }
   }
-}
-/**
- * 调试信息流操作
- */
-if (!class_exists('DEBUG', false)) {
-  class DEBUG {
-    public static $stack = '';
-
-    /**
-     * 添加到DEBUG流
-     *
-     * @param string $msg
-     * @param string $title
-     */
-    public static function put ($msg = '', $title = '') {
-      if (APP::$is_debug) {
-        if (!empty($title)) {
-          $msg = "[$title] $msg";
-        }
-        $timestamp = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3).'ms';
-        DEBUG::$stack .= "[$timestamp] $msg\r\n";
-      }
-    }
-
-    /**
-     * 获取DEBUG流
-     *
-     * @return string
-     */
-    public static function get () {
-      return DEBUG::$stack;
-    }
-
-    /**
-     * 清空DEBUG流，并返回之前的信息
-     *
-     * @return string
-     */
-    public static function clear () {
-      $ret = DEBUG::$stack;
-      DEBUG::$stack = '';
-      return $ret;
-    }
-  }
+} else {
+  DEBUG::put('Class SQL is already exists!', 'Warning');
 }
 
 /**
@@ -471,6 +474,8 @@ if (!class_exists('UPLOAD', false)) {
       return $target;
     }
   }
+} else {
+  DEBUG::put('Class UPLOAD is already exists!', 'Warning');
 }
 
 if (!class_exists('ROUTER', false)) {
@@ -550,9 +555,14 @@ if (!class_exists('ROUTER', false)) {
       }
     }
   }
+} else {
+  DEBUG::put('Class ROUTER is already exists!', 'Warning');
 }
 
 class APP {
+
+  // 版本号
+  public static $version = 1;
 
   // 是否提前退出
   public static $is_exit = false;
@@ -691,34 +701,20 @@ class APP {
    * 载入模板
    * 如果指定了参数$layout，则会嵌套一个layout模板
    *
-   * @param string $name
-   * @param array $locals
-   * @param string $layout
+   * @param string $name   模板名
+   * @param array $locals  变量
+   * @return string
    */
-  public static function template ($name, $locals = array(), $layout = '') {
-    if (!pathinfo($name, PATHINFO_EXTENSION)) {
-      $name = $name.'.html';
-    }
-    if (empty($layout)) {
-      $filename = APP_TEMPLATE_ROOT.$name;
-      $timestamp = microtime(true);
-      include($filename);
-      DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
-    } else {
-      if (!pathinfo($layout, PATHINFO_EXTENSION)) {
-        $layout = $layout.'.html';
-        $filename = APP_TEMPLATE_ROOT.$name;
-        $timestamp = microtime(true);
-        ob_start();
-        include($filename);
-        DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
-        $body = ob_get_clean();
-        $filename = APP_TEMPLATE_ROOT.$layout;
-        $timestamp = microtime(true);
-        include($filename);
-        DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
-      }
-    }
+  public static function getTemplate ($name, $locals = array()) {
+    if (!pathinfo($name, PATHINFO_EXTENSION)) $name = $name.'.html';
+    $filename = APP_TEMPLATE_ROOT.$name;
+    $timestamp = microtime(true);
+    ob_start();
+    extract($locals, EXTR_SKIP);
+    include($filename);
+    $html = ob_get_clean();
+    DEBUG::put('Render '.$filename.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'Template');
+    return $html;
   }
 
   /**
@@ -733,7 +729,14 @@ class APP {
     foreach (APP::$locals as $i => $v) {
       if (!isset($locals[$i])) $locals[$i] = $v;
     }
-    APP::template($name, $locals, $layout);
+
+    $body = APP::getTemplate($name, $locals);
+    if (empty($layout)) {
+      echo $body;
+    } else {
+      $locals['body'] = $body;
+      echo APP::getTemplate($layout, $locals);
+    }
   }
 
   /**

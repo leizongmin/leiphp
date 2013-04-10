@@ -198,18 +198,18 @@ leiphp中提供了一个静态类 __APP__ 来进行应用相关的操作，及�
 
 * `APP::authDecode($string, $key)` 加密账户验证信息
 
-* `APP::template($name, $locals, $layout = '')` 载入模板文件，若不指定后缀名，会
+* `APP::getTemplate($name, $locals)` 载入模板文件，若不指定后缀名，会
 自动加上`.html`，以常量`APP_TEMPLATE_ROOT`定义的模板目录作为根目录，模板文件实际
-上为php程序文件，第二个参数为模板中可用的变量，在模板中通过`$locals`来读取，
-第三个参数为布局模板，默认不使用布局模板，若指定了布局模板，则需要在布局模板中
-通过变量`$body`来获取当前模板的内容，如：`<?php echo $body; ?>`；
+上为php程序文件，第二个参数为模板中可用的变量，在模板中通过`$locals`来读取（若
+无命名冲突也可以直接使用键名），返回渲染后的内容
 
 * `APP::setLocals($name, $value)` 设置模板变量
 
 * `APP::getLocals($name)` 取模板变量值
 
-* `APP::render($name, $locals, $layout = '')` 渲染模板（同`APP::template()`，
-但是会加上用`APP::setLocals()`设置的变量）
+* `APP::render($name, $locals, $layout = '')` 自动为`$locals`加上用
+`APP::setLocals()`设置的变量，并渲染模板。如果指定了视图模板`$layout`，则需要在
+视图模板中通过`$body`变量来获取模板内容。
 
 * `APP::init()` 初始化leiphp；
 
