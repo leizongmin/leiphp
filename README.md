@@ -242,7 +242,15 @@ ROUTER::run('action', @$_GET['__path__']);
 需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到
 `/app/index.php?__path__=$1`
 
-以下是yaml格式的配置示例：
+Nginx的配置示例：
+
+```lua
+if (!-e $request_filename) {
+  rewrite "^/app/(.*)" "/app/index.php?%{QUERY_STRING}&__path__=$1" last;
+}
+```
+
+SAE的配置示例：
 
 ```yaml
 handle:
