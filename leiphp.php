@@ -721,11 +721,22 @@ class APP {
    * 渲染模板，自动使用APP::$locals中的数据
    * 如果指定了参数$layout，则会嵌套一个layout模板
    *
+   * Examples:
+   * APP::render('template');
+   * APP::render('template', $locals);
+   * APP::render('template', 'layout');
+   * APP::render('template', $locals, 'layout');
+   *
    * @param string $name
    * @param array $locals
    * @param string $layout
    */
   public static function render ($name, $locals = array(), $layout = '') {
+    if (!is_array($locals)) {
+      $layout = $locals;
+      $locals = array();
+    }
+
     foreach (APP::$locals as $i => $v) {
       if (!isset($locals[$i])) $locals[$i] = $v;
     }
