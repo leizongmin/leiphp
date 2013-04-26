@@ -194,7 +194,7 @@ if (!class_exists('SQL', false)) {
       if (is_array($where)) return SQL::getAll2($sql, $where);
 
       $r = SQL::query($sql);
-      if (!$r) return fasle;
+      if (!$r) return false;
       $data = array();
       while ($row = mysql_fetch_array($r, MYSQL_ASSOC)) {
         $data[] = $row;
