@@ -242,6 +242,13 @@ ROUTER::run('action', @$_GET['__path__']);
 需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到
 `/app/index.php?__path__=$1`
 
+Apache的配置示例：
+
+```
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^app/(.*)$ /app/index.php?%{QUERY_STRING}&__path__=$1 [L]
+```
+
 Nginx的配置示例：
 
 ```lua
