@@ -3,7 +3,7 @@
  * LeiPHP
  *
  * @author 老雷<leizongmin@gmail.com>
- * @version 0.1
+ * @version 0.2
  */
 
 /* 处理不同的请求方法 */
@@ -277,6 +277,8 @@ if (!class_exists('SQL', false)) {
      * @return string
      */
     public static function _parseWhere ($where) {
+      if (count($where) < 1) return '1';
+
       $items = array();
       $link = 'AND';
       foreach ($where as $f => $v) {
