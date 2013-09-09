@@ -246,6 +246,7 @@ Apache的配置示例：
 
 ```
 RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^app/(.*)$ /app/index.php?%{QUERY_STRING}&__path__=$1 [L]
 ```
 
