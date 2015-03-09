@@ -17,8 +17,11 @@ APP::load('require_file');
 function method_get () {
   echo 'GET请求';
   APP::dump($_GET);
+  APP::dump(SQL::getAll('show tables'));
+  APP::dump(SQL::getAll('show databases'));
+  APP::dump(SQL::getAll('select 1+1 as a'));
   // 渲染模板
-  APP::template();
+  APP::template('test.html');
 }
 
 // 处理POST请求

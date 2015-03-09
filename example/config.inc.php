@@ -16,6 +16,7 @@ define('CONF_MYSQL_SERVER', '127.0.0.1:3306');    // 服务器
 define('CONF_MYSQL_USER',   'root');              // 用户名
 define('CONF_MYSQL_PASSWD', '');                  // 密码
 define('CONF_MYSQL_DBNAME', 'test');              // 数据库名
+define('CONF_MYSQL_CHARSET', 'utf8');             // 数据库编码
 
 
 // 载入leiphp并初始化

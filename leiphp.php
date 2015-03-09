@@ -118,11 +118,16 @@ if (!class_exists('SQL', false)) {
     public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '') {
       $timestamp = microtime(true);
 
-      SQL::$connection = mysqli_connect($server, $username, $password);
+      SQL::$connection = mysqli_connect($server, $username, $password, $database);
 
-      $r = mysqli_select_db(SQL::$connection, $database);
-      DEBUG::put('Connected: '.$username.'@'.$server.' permanent='.$permanent.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
-      return $r;
+      DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
+
+      $err = SQL::error();
+      if ($err['id'] > 0) {
+        DEBUG::put('  - Error: #'.$err['id'].' '.$err['error'], 'MySQL');
+      }
+
+      return SQL::$connection;
     }
 
     /**
@@ -163,7 +168,10 @@ if (!class_exists('SQL', false)) {
      * @return {String}
      */
     public static function charset ($encoding = '') {
-      if (!empty($encoding)) mysqli_set_charset(SQL::$connection, $encoding);
+      if (!empty($encoding)) {
+        mysqli_set_charset(SQL::$connection, $encoding);
+        DEBUG::put('charset='.$encoding, 'MySQL');
+      }
       return mysqli_get_charset(SQL::$connection);
     }
 
@@ -754,6 +762,10 @@ class APP {
     }
   }
 
+  public static function template ($name, $locals = array(), $layout = '') {
+    APP::render($name, $locals, $layout);
+  }
+
   /**
    * 设置模板变量
    *
@@ -856,6 +868,7 @@ class APP {
       $dbname = defined('CONF_MYSQL_DBNAME') ? CONF_MYSQL_DBNAME : '';
       $permanent = defined('CONF_MYSQL_PERMANENT') ? CONF_MYSQL_PERMANENT : false;
       SQL::connect($server, $user, $passwd, $dbname, $permanent);
+      if (defined('CONF_MYSQL_CHARSET')) SQL::charset(CONF_MYSQL_CHARSET);
     }
 
     // 自动执行 method_VERB
