@@ -3,7 +3,7 @@
  * LeiPHP
  *
  * @author 老雷<leizongmin@gmail.com>
- * @version 0.2
+ * @version 0.3
  */
 
 /* 处理不同的请求方法 */
@@ -24,8 +24,8 @@ function _leiphp_request_method_router () {
     $funcname = 'method_undefine';
   }
 
-  // 如果为非永久连接，则自动关闭数据库连接
-  if (!SQL::$is_permanent) @SQL::close();
+  // 关闭数据库连接
+  @SQL::close();
 
   // 显示调试信息
   $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
@@ -105,9 +105,6 @@ if (!class_exists('SQL', false)) {
     // 当前数据库连接
     public static $connection = null;
 
-    // 是否为永久连接
-    public static $is_permanent = false;
-
     /**
      * 连接到数据库
      * 成功返回true, 失败返回false
@@ -116,20 +113,14 @@ if (!class_exists('SQL', false)) {
      * @param string $username
      * @param string $password
      * @param string $database
-     * @param bool $permanent  是否永久连接
      * @return bool
      */
-    public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '', $permanent = true) {
+    public static function connect ($server = 'localhost:3306', $username = 'root', $password = '', $database = '') {
       $timestamp = microtime(true);
 
-      if ($permanent) {
-        SQL::$connection = mysql_pconnect($server, $username, $password);
-      } else {
-        SQL::$connection = mysql_connect($server, $username, $password);
-      }
-      SQL::$is_permanent = $permanent;
+      SQL::$connection = mysqli_connect($server, $username, $password);
 
-      $r = mysql_select_db($database, SQL::$connection);
+      $r = mysqli_select_db(SQL::$connection, $database);
       DEBUG::put('Connected: '.$username.'@'.$server.' permanent='.$permanent.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
       return $r;
     }
@@ -153,7 +144,7 @@ if (!class_exists('SQL', false)) {
      * @return int
      */
     public static function errno () {
-      return mysql_errno(SQL::$connection);
+      return mysqli_errno(SQL::$connection);
     }
 
     /**
@@ -162,7 +153,18 @@ if (!class_exists('SQL', false)) {
      * @return string
      */
     public static function errmsg () {
-      return mysql_error(SQL::$connection);
+      return mysqli_error(SQL::$connection);
+    }
+
+    /**
+     * 设置字符编码
+     *
+     * @param {String} $encoding
+     * @return {String}
+     */
+    public static function charset ($encoding = '') {
+      if (!empty($encoding)) mysqli_set_charset(SQL::$connection, $encoding);
+      return mysqli_get_charset(SQL::$connection);
     }
 
     /**
@@ -173,7 +175,7 @@ if (!class_exists('SQL', false)) {
      */
     public static function query ($sql) {
       $timestamp = microtime(true);
-      $r = mysql_query($sql, SQL::$connection);
+      $r = mysqli_query(SQL::$connection, $sql);
       $spent = round((microtime(true) - $timestamp) * 1000, 3);
       if ($r) {
         DEBUG::put('Query: '.$sql.' spent: '.$spent.'ms', 'MySQL');
@@ -196,7 +198,7 @@ if (!class_exists('SQL', false)) {
       $r = SQL::query($sql);
       if (!$r) return false;
       $data = array();
-      while ($row = mysql_fetch_array($r, MYSQL_ASSOC)) {
+      while ($row = mysqli_fetch_array($r, MYSQL_ASSOC)) {
         $data[] = $row;
       }
       return count($data) < 1 ? false : $data;
@@ -213,7 +215,7 @@ if (!class_exists('SQL', false)) {
      */
     public static function getOne ($sql, $where = null) {
       if (is_array($where)) return SQL::getOne2($sql, $where);
-      
+
       $sql .= ' LIMIT 1';
       $data = SQL::getAll($sql);
       return $data == false ? false : $data[0];
@@ -233,7 +235,7 @@ if (!class_exists('SQL', false)) {
 
       $r = SQL::query($sql);
       if (!$r) return false;
-      return mysql_affected_rows(SQL::$connection);
+      return mysqli_affected_rows(SQL::$connection);
     }
     public static function runSql ($sql) {
       return SQL::update($sql);
@@ -349,7 +351,7 @@ if (!class_exists('SQL', false)) {
 
     /**
      * 查询一条记录
-     * 
+     *
      * string $table
      * @param array $where
      * @return array
@@ -365,7 +367,7 @@ if (!class_exists('SQL', false)) {
 
     /**
      * 查询记录
-     * 
+     *
      * string $table
      * @param array $where
      * @return array
@@ -385,7 +387,7 @@ if (!class_exists('SQL', false)) {
      * @return int
      */
     public static function id () {
-      return mysql_insert_id(SQL::$connection);
+      return mysqli_insert_id(SQL::$connection);
     }
     public static function lastId () {
       return SQL::id();
@@ -398,7 +400,7 @@ if (!class_exists('SQL', false)) {
      * @return string
      */
     public static function escape ($str) {
-      return  mysql_real_escape_string($str, SQL::$connection);
+      return  mysqli_real_escape_string(SQL::$connection, $str);
     }
 
     /**
@@ -406,7 +408,7 @@ if (!class_exists('SQL', false)) {
      */
     public static function close () {
       DEBUG::put('Close connection.', 'MySQL');
-      return @mysql_close(SQL::$connection);
+      return @mysqli_close(SQL::$connection);
     }
   }
 } else {
@@ -844,7 +846,7 @@ class APP {
 
     // 开始时间
     define('APP_TIMESTAMP_START', microtime(true));
-    
+
     // 只要定义了数据库配置中的任一项均自动连接数据库
     if (defined('CONF_MYSQL_SERVER') || defined('CONF_MYSQL_USER') ||
         defined('CONF_MYSQL_PASSWD') || defined('CONF_MYSQL_DBNAME')) {
