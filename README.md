@@ -276,7 +276,7 @@ handle:
 基于MIT协议发布。
 
 ```
-Copyright (c) 2012 Lei Zongmin(雷宗民) <leizongmin@gmail.com>
+Copyright (c) 2012-2015 Lei Zongmin(雷宗民) <leizongmin@gmail.com>
 http://ucdok.com
 
 The MIT License
