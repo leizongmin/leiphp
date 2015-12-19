@@ -206,7 +206,7 @@ if (!class_exists('SQL', false)) {
       $r = SQL::query($sql);
       if (!$r) return false;
       $data = array();
-      while ($row = mysqli_fetch_array($r, MYSQL_ASSOC)) {
+      while ($row = mysqli_fetch_array($r)) {
         $data[] = $row;
       }
       return count($data) < 1 ? false : $data;
