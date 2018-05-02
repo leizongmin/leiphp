@@ -2,6 +2,18 @@
 
 此框架仅有一个文件，其中包含了MySQL数据库、上传文件、调试信息、导入依赖文件、模板和REST路由等一系列常用操作。适合用来快速写一些对性能要求不高的程序。
 
+## 项目文件结构
+
+```text
+.
+├── action          路由处理程序目录
+├── config.inc.php  项目配置文件
+├── index.php       项目入口文件
+├── lib             公共代码目录
+├── public          静态资源文件目录
+└── template        模板目录
+```
+
 ## 初始化
 
 首先新建一个`config.inc.php`文件，所有程序通过加载该文件来进行配置及初始化：
@@ -91,6 +103,15 @@ APP::render('模板名');
 
 ```php
 APP::render('index');
+```
+
+模板文件中通过`$locals`变量来获取模板数据：
+
+```php
+<?= $locals['模板变量'] ?>
+<?php foreach ($item as $list): ?>
+  <?= $item ?>
+<?php endforeach; ?>
 ```
 
 以下为模板渲染相关的方法：
