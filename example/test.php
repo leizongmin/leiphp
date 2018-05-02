@@ -21,7 +21,8 @@ function method_get () {
   APP::dump(SQL::getAll('show databases'));
   APP::dump(SQL::getAll('select 1+1 as a'));
   // 渲染模板
-  APP::template('test.html');
+  TEMPLATE::setLocals('title', '标题');
+  TEMPLATE::render('test.html');
 }
 
 // 处理POST请求
