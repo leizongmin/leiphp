@@ -124,9 +124,10 @@ if (!class_exists('SQL', false)) {
 
       DEBUG::put('Connected: '.$username.'@'.$server.' spent: '.round((microtime(true) - $timestamp) * 1000, 3).'ms', 'MySQL');
 
-      $err = SQL::error();
-      if ($err['id'] > 0) {
-        DEBUG::put('  - Error: #'.$err['id'].' '.$err['error'], 'MySQL');
+      $errno = mysqli_connect_errno(SQL::$connection);
+      if ($errno > 0) {
+        $error = mysqli_connect_error(SQL::$connection);
+        DEBUG::put('  - Error: #'.$errno.' '.$error, 'MySQL');
       }
 
       return SQL::$connection;
