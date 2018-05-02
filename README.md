@@ -196,12 +196,8 @@ RewriteRule ^app/(.*)$ /app/index.php?%{QUERY_STRING}&__path__=$1 [L]
 ### Nginx的配置示例
 
 ```nginx
-location / {
-  root /var/html/myapp;
-  index index.html index.php;
-  if (!-e $request_filename) {
-    rewrite "^/app/(.*)" "/app/index.php?%{QUERY_STRING}&__path__=$1" last;
-  }
+if (!-e $request_filename) {
+  rewrite "^/app/(.*)" "/app/index.php?%{QUERY_STRING}&__path__=$1" last;
 }
 ```
 
