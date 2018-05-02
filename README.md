@@ -183,10 +183,9 @@ ROUTER::run('action', @$_GET['__path__']);
 ?>
 ```
 
-需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到
-`/app/index.php?__path__=$1`
+需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到`/app/index.php?__path__=$1`
 
-Apache的配置示例：
+### Apache的配置示例
 
 ```text
 RewriteCond %{REQUEST_FILENAME} !-f
@@ -194,15 +193,19 @@ RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^app/(.*)$ /app/index.php?%{QUERY_STRING}&__path__=$1 [L]
 ```
 
-Nginx的配置示例：
+### Nginx的配置示例
 
-```lua
-if (!-e $request_filename) {
-  rewrite "^/app/(.*)" "/app/index.php?%{QUERY_STRING}&__path__=$1" last;
+```nginx
+location / {
+  root /var/html/myapp;
+  index index.html index.php;
+  if (!-e $request_filename) {
+    rewrite "^/app/(.*)" "/app/index.php?%{QUERY_STRING}&__path__=$1" last;
+  }
 }
 ```
 
-SAE的配置示例：
+### SAE的配置示例
 
 ```yaml
 handle:
