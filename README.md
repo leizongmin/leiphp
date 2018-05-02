@@ -185,6 +185,17 @@ ROUTER::run('action', @$_GET['__path__']);
 
 需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到`/app/index.php?__path__=$1`
 
+### 使用PATH_INFO
+
+```php
+<?php
+require('config.inc.php');
+ROUTER::run('action', @$_SERVER['PATH_INFO']);
+?>
+```
+
+通过`/index.php/xxxx`访问。
+
 ### Apache的配置示例
 
 ```text
