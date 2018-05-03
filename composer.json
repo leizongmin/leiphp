@@ -1,7 +1,7 @@
 {
   "name": "leizongmin/leiphp",
   "type": "library",
-  "description": "轻量级的 PHP MVC 框架 lightweight MVC framework for PHP",
+  "description": "轻量级的 PHP MVC 框架 Lightweight MVC framework for simplistic PHP apps",
   "keywords": ["framework", "web", "restful", "mvc"],
   "homepage": "https://github.com/leizongmin/leiphp",
   "license": "MIT",
