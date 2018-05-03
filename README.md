@@ -190,7 +190,10 @@ LeiPHP中提供了一个静态类 __APP__ 来进行应用相关的操作，及�
 * `APP::validatePassword ($password, $encrypted)` 验证密码，第一个参数为待验证的密码，第二个参数为`APP::encryptPassword ($password)`返回的字符串，返回`TRUE`或`FALSE`；
 * `APP::dump($var)` 打印变量结构，一般用于调试；
 * `APP::showError($msg)` 显示出错信息；
-* `APP::load($filename)` 载入依赖的php文件，若不指定后缀名，会自动加上`.php`，默认以当前php文件为根目录，若文件名以`/`开头，则以常量`APP_ROOT`定义的应用目录作为根目录；
+* `APP::load($filename)` 载入依赖的php文件，若不指定后缀名，会自动加上`.php`，默认以当前php文件为根目录，若文件名以`/`开头，则以常量`APP_ROOT`定义的应用目录作为根目录；几种用途：
+  * 载入依赖文件：`APP::load('xxx.php')`；
+  * 使用php文件存储数据，将其读取出来：`$data = APP::load('data.php')`，php文件内容：`<?php return [1,2]; ?>`；
+  * 使用json文件存储数据，将其读取出来：`$data = APP::load('data.json')`，json文件内容：`[1,2]`；
 * `APP::sendJSON($data)` 返回JSON格式数据；
 * `APP::sendError($msg, $data = array())` 返回JSON格式的出错信息：`{"error":"msg"}`；
 * `APP::authEncode($string, $key, $expirey)` 加密账户验证信息，可指定过期时间；

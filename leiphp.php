@@ -3,8 +3,7 @@
  * LeiPHP
  *
  * @author 老雷<leizongmin@gmail.com>
- * @version 0.4.1
- * @date 2018-05-03 00:53:38
+ * @version 0.4.2
  */
 
 /* 处理不同的请求方法 */
@@ -828,15 +827,24 @@ if (!class_exists('APP', false)) {
      * @return mixed
      */
     public static function load ($filename) {
-      if (!pathinfo($filename, PATHINFO_EXTENSION)) {
+      $ext = pathinfo($filename, PATHINFO_EXTENSION);
+      if (!$ext) {
         $filename = $filename.'.php';
+        $ext = 'php';
       }
       if (substr($filename, 0, 1) == '/') {
         $filename = APP_ROOT.substr($filename, 1);
       } else {
         $filename = dirname($_SERVER["SCRIPT_FILENAME"]).'/'.$filename;
       }
-      return require($filename);
+      switch ($ext) {
+        case 'php':
+          return require($filename);
+        case 'json':
+          return json_decode(file_get_contents($filename), true);
+        default:
+          DEBUG::put("APP::load('$filename') error, does not support file type: $ext", 'Error');
+      }
     }
 
     /**
