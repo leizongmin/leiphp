@@ -16,6 +16,11 @@
 └── template        模板目录
 ```
 
+## 安装
+
+* 直接下载`leiphp.php`文件：`wget https://raw.githubusercontent.com/leizongmin/leiphp/master/leiphp.php`
+* 通过`composer`安装：`composer require leizongmin/leiphp`
+
 ## 初始化
 
 首先新建一个`config.inc.php`文件，所有程序通过加载该文件来进行配置及初始化：
@@ -45,6 +50,12 @@ define('CONF_MYSQL_PERMANENT', false);          // 使用使用永久连接，�
 require(APP_ROOT.'leiphp.php');
 APP::init();
 ?>
+```
+
+如果通过`composer`安装，则载入路径应改为：
+
+```php
+require(APP_ROOT.'/vendor/leizongmin/leiphp/leiphp.php');
 ```
 
 在所有php程序中，均可载入`config.inc.php`文件唉实现初始化LeiPHP：
