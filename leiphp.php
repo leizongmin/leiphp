@@ -3,7 +3,7 @@
  * LeiPHP
  *
  * @author 老雷<leizongmin@gmail.com>
- * @version 0.4
+ * @version 0.4.1
  * @date 2018-05-03 00:53:38
  */
 
@@ -656,6 +656,8 @@ if (!class_exists('TEMPLATE', false)) {
     }
 
   }
+} else {
+  DEBUG::put('Class TEMPLATE is already exists!', 'Warning');
 }
 
 if (!class_exists('APP', false)) {
@@ -896,4 +898,6 @@ if (!class_exists('APP', false)) {
       die;
     }
   }
+} else {
+  DEBUG::put('Class APP is already exists!', 'Warning');
 }
