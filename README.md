@@ -5,7 +5,9 @@
 
 # LeiPHP 轻量级的 PHP MVC 框架
 
-Lightweight MVC framework for simplistic PHP apps. LeiPHP is contained in one single PHP file. It works based on a config file and is perfect for small to medium PHP-powered projects.
+Lightweight MVC framework for simplistic PHP apps.
+
+LeiPHP is contained in one single PHP file. It works based on a config file and is perfect for small to medium PHP-powered projects.
 
 Features:
 
