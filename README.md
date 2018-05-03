@@ -1,8 +1,11 @@
+![version](https://img.shields.io/packagist/v/leizongmin/leiphp.svg)
+![php](https://img.shields.io/packagist/php-v/leizongmin/leiphp.svg)
+![license](https://img.shields.io/packagist/l/leizongmin/leiphp.svg)
+![downloads](https://img.shields.io/packagist/dt/leizongmin/leiphp.svg)
+
 # LeiPHP 轻量级的 PHP MVC 框架
 
-此框架仅有一个文件，其中包含了MySQL数据库、上传文件、调试信息、导入依赖文件、模板和REST路由等一系列常用操作。适合用来快速写一些对性能要求不高的程序。
-
-当前版本：0.4
+此框架仅有一个文件，其中包含了MySQL数据库、上传文件、调试信息、导入依赖文件、模板和REST路由等一系列常用操作。API接口简单，学习成本低，开箱即用，适合用来快速写一些对性能要求不高的程序。
 
 ## 项目文件结构
 
@@ -40,7 +43,7 @@ define('APP_TEMPLATE_ROOT', APP_ROOT.'template/');
 define('APP_DEBUG', true);
 
 // MYSQL数据库配置，如果不定义数据库配置，则不自动连接数据库
-define('CONF_MYSQL_SERVER', 'localhost:3306');  // 服务器，默认为 localhost:3306
+define('CONF_MYSQL_SERVER', 'localhost:3306');  // 服务器，默认为 localhost:3306，使用长连接在地址前加 p:，如：p:localhost:3306
 define('CONF_MYSQL_USER',   'root');            // 用户名，默认为 root
 define('CONF_MYSQL_PASSWD', '123456');          // 密码，默认为空
 define('CONF_MYSQL_DBNAME', 'test');            // 数据库名，默认为空
@@ -136,9 +139,9 @@ TEMPLATE::render('index');
 
 ## 操作MySQL数据库
 
-LeiPHP中提供了一个静态类 __SQL__ 来操作MySQL数据库：
+LeiPHP中提供了一个静态类 __SQL__ 来操作MySQL数据库（基于 __mysqli__ 实现）：
 
-* `SQL::connect($server = 'localhost:3306', $username = 'root', $password = '',$database = '');`连接到数据库，当配置了数据库连接时，leiapp会自动执行此方法来连接到数据库，若你的程序中已经通过`mysql_connect`来创建了一个数据库连接，可以不用再执行此方法连接数据库；
+* `SQL::connect($server = 'localhost:3306', $username = 'root', $password = '',$database = '');`连接到数据库，当配置了数据库连接时，leiapp会自动执行此方法来连接到数据库，若你的程序中已经通过`mysqli_connect`来创建了一个数据库连接，可以不用再执行此方法连接数据库（如果要使用永久连接来提高性能，可以在`$server`前加字符串`p:`，如：`p:localhost:3306`）；
 * `SQL::getAll($sql)` 或 `SQL::getData($sql)` 查询SQL，并返回数组格式的结果，失败返回`FALSE`；
 * `SQL::getOne($sql)` 或 `SQL::getLine($sql)` 查询SQL，仅返回第一条结果，失败返回`FALSE`；
 * `SQL::update($sql)` 或 `SQL::runSql($sql)` 查询SQL，返回受影响的记录数，一般用于执行插入或更新操作；
