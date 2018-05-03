@@ -7,6 +7,16 @@
 
 Lightweight MVC framework for simplistic PHP apps. LeiPHP is contained in one single PHP file. It works based on a config file and is perfect for small to medium PHP-powered projects.
 
+Features:
+
+* Supports database interaction
+* Support for file uploads
+* Debugging tools
+* File dependency management
+* Template engine
+* REST-based routing
+* Easy to initialize
+
 此框架仅有一个文件，其中包含了MySQL数据库、上传文件、调试信息、导入依赖文件、模板和REST路由等一系列常用操作。API接口简单，学习成本低，开箱即用，适合用来快速写一些对性能要求不高的程序。
 
 ## 项目文件结构
