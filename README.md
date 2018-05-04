@@ -224,13 +224,21 @@ LeiPHP中提供了一个静态类 __ROUTER__ 来进行路由相关的操作：
 
 ### 示例
 
-应用统一入口文件：index.php
+新建应用统一入口文件：`index.php`：
 
 ```php
 <?php
 require('config.inc.php');
 ROUTER::run('action', @$_GET['__path__']);
 ?>
+```
+
+新建首页处理程序：`action/index.php`：
+
+```php
+function method_get() {
+  echo 'hello, world';
+}
 ```
 
 需要配置服务器的URL Rewrite，比如将 `/app/(.*)` 的所有请求转到`/app/index.php?__path__=$1`
