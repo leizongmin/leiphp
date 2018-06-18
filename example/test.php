@@ -21,7 +21,7 @@ function method_get () {
   APP::dump(SQL::find_all('show databases'));
   APP::dump(SQL::find_all('select 1+1 as a'));
   // 渲染模板
-  TPL::set_locals('title', '标题');
+  TPL::set_val('title', '标题');
   TPL::render('test.html');
 }
 

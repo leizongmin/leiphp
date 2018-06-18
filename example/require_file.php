@@ -1,3 +1,3 @@
 <?php
 
-echo 'require file';
+echo '<p>require file</p>';

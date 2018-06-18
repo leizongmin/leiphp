@@ -630,7 +630,7 @@ if (!class_exists('TPL', false)) {
      * @param mixed $value
      * @return mixed
      */
-    public static function set_locals ($name, $value = null) {
+    public static function set_val ($name, $value = null) {
       TPL::$locals[$name] = $value;
       return @TPL::$locals[$name];
     }
@@ -641,7 +641,7 @@ if (!class_exists('TPL', false)) {
      * @param string $name
      * @return mixed
      */
-    public static function get_locals ($name) {
+    public static function get_val ($name) {
       return @TPL::$locals[$name];
     }
 

@@ -124,7 +124,7 @@ LeiPHP中提供了一个静态类 __TPL__ 来渲染HTML模板：
 
 ```php
 // 设置模板变量
-TPL::set_locals('模板变量', '值');
+TPL::set_val('模板变量', '值');
 // 渲染模板
 TPL::render('模板名');
 ```
@@ -147,9 +147,9 @@ TPL::render('index');
 以下为模板渲染相关的方法：
 
 * `TPL::get($name, $locals)` 载入模板文件，若不指定后缀名，会自动加上`.html`，以常量`APP_TPL_ROOT`定义的模板目录作为根目录，模板文件实际上为php程序文件，第二个参数为模板中可用的变量，在模板中通过`$locals`来读取（若无命名冲突也可以直接使用键名），返回渲染后的内容；
-* `TPL::set_locals($name, $value)` 设置模板变量；
-* `TPL::get_locals($name)` 取模板变量值；
-* `TPL::render($name, $locals, $layout = '')` 自动为`$locals`加上用`APP::set_locals()`设置的变量，并渲染模板。如果指定了视图模板`$layout`，则需要在视图模板中通过`$body`变量来获取模板内容；
+* `TPL::set_val($name, $value)` 设置模板变量；
+* `TPL::get_val($name)` 取模板变量值；
+* `TPL::render($name, $locals, $layout = '')` 自动为`$locals`加上用`APP::set_val()`设置的变量，并渲染模板。如果指定了视图模板`$layout`，则需要在视图模板中通过`$body`变量来获取模板内容；
 
 ## 操作MySQL数据库
 
