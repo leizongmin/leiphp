@@ -202,8 +202,8 @@ if (!class_exists('SQL', false)) {
      * @param string $sql
      * @return array
      */
-    public static function getAll ($sql, $where = null) {
-      if (is_array($where)) return SQL::getAll2($sql, $where);
+    public static function find_all ($sql, $where = null) {
+      if (is_array($where)) return SQL::find_all2($sql, $where);
 
       $r = SQL::query($sql);
       if (!$r) return false;
@@ -213,9 +213,6 @@ if (!class_exists('SQL', false)) {
       }
       return count($data) < 1 ? false : $data;
     }
-    public static function getData ($sql) {
-      return SQL::getAll($sql);
-    }
 
     /**
      * 查询并返回一行数据 格式为 {字段名:值, 字段名:值 ...}，返回false表示失败
@@ -223,15 +220,12 @@ if (!class_exists('SQL', false)) {
      * @param string $sql
      * @return array
      */
-    public static function getOne ($sql, $where = null) {
-      if (is_array($where)) return SQL::getOne2($sql, $where);
+    public static function find_one ($sql, $where = null) {
+      if (is_array($where)) return SQL::find_one2($sql, $where);
 
       $sql .= ' LIMIT 1';
-      $data = SQL::getAll($sql);
+      $data = SQL::find_all($sql);
       return $data == false ? false : $data[0];
-    }
-    public static function getLine ($sql) {
-      return SQL::getOne($sql);
     }
 
     /**
@@ -246,9 +240,6 @@ if (!class_exists('SQL', false)) {
       $r = SQL::query($sql);
       if (!$r) return false;
       return mysqli_affected_rows(SQL::$connection);
-    }
-    public static function runSql ($sql) {
-      return SQL::update($sql);
     }
 
     /**
@@ -288,7 +279,7 @@ if (!class_exists('SQL', false)) {
      *                            ))
      * @return string
      */
-    public static function _parseWhere ($where) {
+    public static function _parse_where ($where) {
       if (count($where) < 1) return '1';
 
       $items = array();
@@ -338,7 +329,7 @@ if (!class_exists('SQL', false)) {
         $set[] = "`$f`='$v'";
       }
       $set = implode(', ', $set);
-      $where = SQL::_parseWhere($where);
+      $where = SQL::_parse_where($where);
       $sql = "UPDATE `$table` SET $set WHERE $where";
       return SQL::update($sql);
     }
@@ -354,7 +345,7 @@ if (!class_exists('SQL', false)) {
       if (!is_array($where) && count($where) > 0) return false;
 
       $table = SQL::escape($table);
-      $where = SQL::_parseWhere($where);
+      $where = SQL::_parse_where($where);
       $sql = "DELETE FROM `$table` WHERE $where";
       return SQL::update($sql);
     }
@@ -366,13 +357,13 @@ if (!class_exists('SQL', false)) {
      * @param array $where
      * @return array
      */
-    public static function getOne2 ($table, $where) {
+    public static function find_one2 ($table, $where) {
       if (!is_array($where) && count($where) > 0) return false;
 
       $table = SQL::escape($table);
-      $where = SQL::_parseWhere($where);
+      $where = SQL::_parse_where($where);
       $sql = "SELECT * FROM `$table` WHERE $where";
-      return SQL::getOne($sql);
+      return SQL::find_one($sql);
     }
 
     /**
@@ -382,13 +373,13 @@ if (!class_exists('SQL', false)) {
      * @param array $where
      * @return array
      */
-    public static function getAll2 ($table, $where) {
+    public static function find_all2 ($table, $where) {
       if (!is_array($where) && count($where) > 0) return false;
 
       $table = SQL::escape($table);
-      $where = SQL::_parseWhere($where);
+      $where = SQL::_parse_where($where);
       $sql = "SELECT * FROM `$table` WHERE $where";
-      return SQL::getAll($sql);
+      return SQL::find_all($sql);
     }
 
     /**
@@ -515,23 +506,23 @@ if (!class_exists('ROUTER', false)) {
       if ($path != '/' && substr($path, -1) == '/') $path = substr($path, strlen($path) - 1);
 
       // 中间件处理
-      ROUTER::runMiddleware($path);
+      ROUTER::run_middleware($path);
 
       $filename = APP_ROOT.$dir.$path.(substr($path, -1) == '/' ? '/index' : '').'.php';
       DEBUG::put("path=$path, file=$filename", 'Router');
       if (file_exists($filename)) {
         require($filename);
       } else {
-        ROUTER::notFound($path, $filename);
+        ROUTER::not_found($path, $filename);
       }
     }
 
     /**
      * 路由未找到
      */
-    public static function notFound ($path, $filename) {
+    public static function not_found ($path, $filename) {
       @header("HTTP/1.1 404 Not Found");
-      APP::showError("Path \"$path\" Not Found.");
+      APP::show_error("Path \"$path\" Not Found.");
       DEBUG::put("Not found: path=$path, file=$filename", 'Router');
     }
 
@@ -552,7 +543,7 @@ if (!class_exists('ROUTER', false)) {
      *
      * @param string $path
      */
-    public static function runMiddleware ($path) {
+    public static function run_middleware ($path) {
       $pathlen = strlen($path);
       foreach (ROUTER::$_list as $i => $v) {
         $p = $v[0];
@@ -573,8 +564,8 @@ if (!class_exists('ROUTER', false)) {
   DEBUG::put('Class ROUTER is already exists!', 'Warning');
 }
 
-if (!class_exists('TEMPLATE', false)) {
-  class TEMPLATE {
+if (!class_exists('TPL', false)) {
+  class TPL {
 
     // 模板变量
     public static $locals = array();
@@ -600,7 +591,7 @@ if (!class_exists('TEMPLATE', false)) {
     }
 
     /**
-     * 渲染模板，自动使用TEMPLATE::$locals中的数据
+     * 渲染模板，自动使用TPL::$locals中的数据
      * 如果指定了参数$layout，则会嵌套一个layout模板
      *
      * Examples:
@@ -619,16 +610,16 @@ if (!class_exists('TEMPLATE', false)) {
         $locals = array();
       }
 
-      foreach (TEMPLATE::$locals as $i => $v) {
+      foreach (TPL::$locals as $i => $v) {
         if (!isset($locals[$i])) $locals[$i] = $v;
       }
 
-      $body = TEMPLATE::get($name, $locals);
+      $body = TPL::get($name, $locals);
       if (empty($layout)) {
         echo $body;
       } else {
         $locals['body'] = $body;
-        echo TEMPLATE::get($layout, $locals);
+        echo TPL::get($layout, $locals);
       }
     }
 
@@ -639,9 +630,9 @@ if (!class_exists('TEMPLATE', false)) {
      * @param mixed $value
      * @return mixed
      */
-    public static function setLocals ($name, $value = null) {
-      TEMPLATE::$locals[$name] = $value;
-      return @TEMPLATE::$locals[$name];
+    public static function set_locals ($name, $value = null) {
+      TPL::$locals[$name] = $value;
+      return @TPL::$locals[$name];
     }
 
     /**
@@ -650,13 +641,13 @@ if (!class_exists('TEMPLATE', false)) {
      * @param string $name
      * @return mixed
      */
-    public static function getLocals ($name) {
-      return @TEMPLATE::$locals[$name];
+    public static function get_locals ($name) {
+      return @TPL::$locals[$name];
     }
 
   }
 } else {
-  DEBUG::put('Class TEMPLATE is already exists!', 'Warning');
+  DEBUG::put('Class TPL is already exists!', 'Warning');
 }
 
 if (!class_exists('APP', false)) {
@@ -730,7 +721,7 @@ if (!class_exists('APP', false)) {
      * @param int $expiry     从现在起的有效时间（秒）
      * @return string
      */
-    public static function authEncode ($string, $key, $expiry = 0) {
+    public static function auth_encode ($string, $key, $expiry = 0) {
       return APP::authcode($string, 'ENCODE', $key, $expiry);
     }
 
@@ -741,7 +732,7 @@ if (!class_exists('APP', false)) {
      * @param string $key     密匙
      * @return string
      */
-    public static function authDecode ($string, $key) {
+    public static function auth_decode ($string, $key) {
       return APP::authcode($string, 'DECODE', $key);
     }
 
@@ -751,7 +742,7 @@ if (!class_exists('APP', false)) {
      * @param string $password
      * @return string
      */
-    public static function encryptPassword ($password) {
+    public static function encrypt_password ($password) {
       $random = strtoupper(md5(rand().rand()));
       $left = substr($random, 0, 2);
       $right = substr($random, -2);
@@ -766,7 +757,7 @@ if (!class_exists('APP', false)) {
      * @param string $encrypted 密码加密字符串
      * @return bool
      */
-    public static function validatePassword ($password, $encrypted) {
+    public static function validate_password ($password, $encrypted) {
       $random = explode(':', strtoupper($encrypted));
       if (count($random) < 3) return false;
       $left = $random[0];
@@ -781,10 +772,10 @@ if (!class_exists('APP', false)) {
      *
      * @param string $msg
      */
-    public static function showError ($msg) {
+    public static function show_error ($msg) {
       $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
       if (strpos($accept_type, 'json') !== false) {
-        APP::sendJSON(array('error' => $msg));
+        APP::send_json(array('error' => $msg));
       } else {
         echo "<div style='color: #900;
               font-size: 16px;
@@ -800,7 +791,7 @@ if (!class_exists('APP', false)) {
      *
      * @param mixed $data
      */
-    public static function sendJSON ($data = null) {
+    public static function send_json ($data = null) {
       @header('content-type: application/json');
       if (is_array($data) && APP::$is_debug) $data['debug'] = DEBUG::get();
       echo json_encode($data);
@@ -813,9 +804,9 @@ if (!class_exists('APP', false)) {
      * @param string $msg   出错信息
      * @param array $data   其他数据
      */
-    public static function sendError ($msg, $data = array()) {
+    public static function send_json_error ($msg, $data = array()) {
       $data['error'] = $msg;
-      APP::sendJSON($data);
+      APP::send_json($data);
     }
 
     /**

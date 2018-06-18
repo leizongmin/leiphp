@@ -17,12 +17,12 @@ APP::load('require_file');
 function method_get () {
   echo 'GET请求';
   APP::dump($_GET);
-  APP::dump(SQL::getAll('show tables'));
-  APP::dump(SQL::getAll('show databases'));
-  APP::dump(SQL::getAll('select 1+1 as a'));
+  APP::dump(SQL::find_all('show tables'));
+  APP::dump(SQL::find_all('show databases'));
+  APP::dump(SQL::find_all('select 1+1 as a'));
   // 渲染模板
-  TEMPLATE::setLocals('title', '标题');
-  TEMPLATE::render('test.html');
+  TPL::set_locals('title', '标题');
+  TPL::render('test.html');
 }
 
 // 处理POST请求

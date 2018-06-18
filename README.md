@@ -120,19 +120,19 @@ function method_put () {
 
 ## 模板渲染
 
-LeiPHP中提供了一个静态类 __TEMPLATE__ 来渲染HTML模板：
+LeiPHP中提供了一个静态类 __TPL__ 来渲染HTML模板：
 
 ```php
 // 设置模板变量
-TEMPLATE::setLocals('模板变量', '值');
+TPL::set_locals('模板变量', '值');
 // 渲染模板
-TEMPLATE::render('模板名');
+TPL::render('模板名');
 ```
 
 模板文件存放在`template`目录内，比如要渲染`template/index.html`：
 
 ```php
-TEMPLATE::render('index');
+TPL::render('index');
 ```
 
 模板文件中通过`$locals`变量来获取模板数据：
@@ -146,19 +146,19 @@ TEMPLATE::render('index');
 
 以下为模板渲染相关的方法：
 
-* `TEMPLATE::get($name, $locals)` 载入模板文件，若不指定后缀名，会自动加上`.html`，以常量`APP_TEMPLATE_ROOT`定义的模板目录作为根目录，模板文件实际上为php程序文件，第二个参数为模板中可用的变量，在模板中通过`$locals`来读取（若无命名冲突也可以直接使用键名），返回渲染后的内容；
-* `TEMPLATE::setLocals($name, $value)` 设置模板变量；
-* `TEMPLATE::getLocals($name)` 取模板变量值；
-* `TEMPLATE::render($name, $locals, $layout = '')` 自动为`$locals`加上用`APP::setLocals()`设置的变量，并渲染模板。如果指定了视图模板`$layout`，则需要在视图模板中通过`$body`变量来获取模板内容；
+* `TPL::get($name, $locals)` 载入模板文件，若不指定后缀名，会自动加上`.html`，以常量`APP_TPL_ROOT`定义的模板目录作为根目录，模板文件实际上为php程序文件，第二个参数为模板中可用的变量，在模板中通过`$locals`来读取（若无命名冲突也可以直接使用键名），返回渲染后的内容；
+* `TPL::set_locals($name, $value)` 设置模板变量；
+* `TPL::get_locals($name)` 取模板变量值；
+* `TPL::render($name, $locals, $layout = '')` 自动为`$locals`加上用`APP::set_locals()`设置的变量，并渲染模板。如果指定了视图模板`$layout`，则需要在视图模板中通过`$body`变量来获取模板内容；
 
 ## 操作MySQL数据库
 
 LeiPHP中提供了一个静态类 __SQL__ 来操作MySQL数据库（基于 __mysqli__ 实现）：
 
 * `SQL::connect($server = 'localhost:3306', $username = 'root', $password = '',$database = '');`连接到数据库，当配置了数据库连接时，leiapp会自动执行此方法来连接到数据库，若你的程序中已经通过`mysqli_connect`来创建了一个数据库连接，可以不用再执行此方法连接数据库（如果要使用永久连接来提高性能，可以在`$server`前加字符串`p:`，如：`p:localhost:3306`）；
-* `SQL::getAll($sql)` 或 `SQL::getData($sql)` 查询SQL，并返回数组格式的结果，失败返回`FALSE`；
-* `SQL::getOne($sql)` 或 `SQL::getLine($sql)` 查询SQL，仅返回第一条结果，失败返回`FALSE`；
-* `SQL::update($sql)` 或 `SQL::runSql($sql)` 查询SQL，返回受影响的记录数，一般用于执行插入或更新操作；
+* `SQL::find_all($sql)` 查询SQL，并返回数组格式的结果，失败返回`FALSE`；
+* `SQL::find_one($sql)` 查询SQL，仅返回第一条结果，失败返回`FALSE`；
+* `SQL::update($sql)` 查询SQL，返回受影响的记录数，一般用于执行插入或更新操作；
 * `SQL::id()` 或 `SQL::lastId()` 返回最后插入的一条记录的ID；
 * `SQL::errno()` 返回最后执行的一条SQL语句的出错号；
 * `SQL::errmsg()` 返回最后执行的一条SQL语句的出错信息；
@@ -166,8 +166,8 @@ LeiPHP中提供了一个静态类 __SQL__ 来操作MySQL数据库（基于 __mys
 
 更简便的数据库操作：
 
-* `SQL::getAll($table, $where)` 查询所有记录，其中$table是表名，$where是一个条件数组，如：`array('id' => 1)`；
-* `SQL::getOne($table, $where)` 查询一条记录；
+* `SQL::find_all($table, $where)` 查询所有记录，其中$table是表名，$where是一个条件数组，如：`array('id' => 1)`；
+* `SQL::find_one($table, $where)` 查询一条记录；
 * `SQL::update($table, $where, $update)` 更新记录并返回受影响的记录数，其中$update是要更新的数据数组，如：`array('name' => 'haha')`；
 * `SQL::insert($table, $data)` 插入一条记录并返回其ID，其中$data是一个数组，如：`array('name' => 'haha', 'age' => 20)`；
 * `SQL::delete($table, $where)` 删除记录；
@@ -200,18 +200,18 @@ LeiPHP中提供了一个静态类 __DEBUG__ 来操作调试信息，当定义了
 
 LeiPHP中提供了一个静态类 __APP__ 来进行应用相关的操作，及一些公共函数：
 
-* `APP::encryptPassword ($password)` 加密密码，返回一个加盐处理后的MD5字符串，如：`FF:15855D447208A6AB4BD2CC88D4B91732:83`；
-* `APP::validatePassword ($password, $encrypted)` 验证密码，第一个参数为待验证的密码，第二个参数为`APP::encryptPassword ($password)`返回的字符串，返回`TRUE`或`FALSE`；
+* `APP::encrypt_password ($password)` 加密密码，返回一个加盐处理后的MD5字符串，如：`FF:15855D447208A6AB4BD2CC88D4B91732:83`；
+* `APP::validate_password ($password, $encrypted)` 验证密码，第一个参数为待验证的密码，第二个参数为`APP::encrypt_password ($password)`返回的字符串，返回`TRUE`或`FALSE`；
 * `APP::dump($var)` 打印变量结构，一般用于调试；
-* `APP::showError($msg)` 显示出错信息；
+* `APP::show_error($msg)` 显示出错信息；
 * `APP::load($filename)` 载入依赖的php文件，若不指定后缀名，会自动加上`.php`，默认以当前php文件为根目录，若文件名以`/`开头，则以常量`APP_ROOT`定义的应用目录作为根目录；几种用途：
   * 载入依赖文件：`APP::load('xxx.php')`；
   * 使用php文件存储数据，将其读取出来：`$data = APP::load('data.php')`，php文件内容：`<?php return [1,2]; ?>`；
   * 使用json文件存储数据，将其读取出来：`$data = APP::load('data.json')`，json文件内容：`[1,2]`；
-* `APP::sendJSON($data)` 返回JSON格式数据；
-* `APP::sendError($msg, $data = array())` 返回JSON格式的出错信息：`{"error":"msg"}`；
-* `APP::authEncode($string, $key, $expirey)` 加密账户验证信息，可指定过期时间；
-* `APP::authDecode($string, $key)` 加密账户验证信息；
+* `APP::send_json($data)` 返回JSON格式数据；
+* `APP::send_json_error($msg, $data = array())` 返回JSON格式的出错信息：`{"error":"msg"}`；
+* `APP::auth_encode($string, $key, $expirey)` 加密账户验证信息，可指定过期时间；
+* `APP::auth_decode($string, $key)` 加密账户验证信息；
 * `APP::init()` 初始化LeiPHP；
 * `APP::end()` 提前退出；
 
