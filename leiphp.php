@@ -28,7 +28,7 @@ function _leiphp_request_method_router () {
   @SQL::close();
 
   // 显示调试信息
-  $accept_type = strtolower(trim($_SERVER['HTTP_ACCEPT']));
+  $accept_type = @strtolower(trim($_SERVER['HTTP_ACCEPT']));
   if (APP::$is_debug && substr($accept_type, 0, 9) == 'text/html') {
     $spent2 = round((microtime(true) - APP_TIMESTAMP_ROUTE) * 1000, 3);
     $spent = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3);
@@ -464,10 +464,10 @@ if (!class_exists('UPLOAD', false)) {
           );
       } else {
         $uploaded_file = array(
-          'name' => $GLOBALS[$filename . '_name'],
-          'type' => $GLOBALS[$filename . '_type'],
-          'size' => $GLOBALS[$filename . '_size'],
-          'tmp_name' => $GLOBALS[$filename]
+          'name' => @$GLOBALS[$filename . '_name'],
+          'type' => @$GLOBALS[$filename . '_type'],
+          'size' => @$GLOBALS[$filename . '_size'],
+          'tmp_name' => @$GLOBALS[$filename]
         );
       }
       return $uploaded_file;
