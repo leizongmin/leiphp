@@ -4,7 +4,7 @@
  */
 
 // 载入配置文件
-require('config.inc.php');
+require('global.inc.php');
 
 
 // 公共处理部分在这里写
@@ -16,6 +16,8 @@ APP::load('require_file');
 // 处理GET请求
 function method_get () {
   echo 'GET请求';
+  APP::dump(APP::$config);
+  APP::dump(APP::get('ROOT'));
   APP::dump($_GET);
   APP::dump(SQL::find_all('show tables'));
   APP::dump(SQL::find_all('show databases'));

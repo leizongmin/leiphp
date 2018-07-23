@@ -26,7 +26,7 @@ Features:
 ```text
 .
 ├── action          路由处理程序目录
-├── config.inc.php  项目配置文件
+├── global.inc.php  项目公共文件文件
 ├── index.php       项目入口文件
 ├── lib             公共代码目录
 ├── public          静态资源文件目录
@@ -40,31 +40,33 @@ Features:
 
 ## 初始化
 
-首先新建一个`config.inc.php`文件，所有程序通过加载该文件来进行配置及初始化：
+首先新建一个`global.inc.php`文件，所有程序通过加载该文件来进行配置及初始化：
 
 ```php
 <?php
 /**
- * 配置文件
+ * 公共文件
  */
 
+// 载入LeiPHP
+require('leiphp.php');
+
 // 当前应用的根目录
-define('APP_ROOT', dirname(__FILE__ ).'/');
+APP::set('ROOT', dirname(__FILE__ ).'/');
 // 模板根目录
-define('APP_TEMPLATE_ROOT', APP_ROOT.'template/');
+APP::set('TEMPLATE_ROOT', APP::get('ROOT').'template/');
 
 // 输出调试信息，生成环境请去掉这行或设置为false
-define('APP_DEBUG', true);
+APP::set('DEBUG', true);
 
 // MYSQL数据库配置，如果不定义数据库配置，则不自动连接数据库
-define('CONF_MYSQL_SERVER', 'localhost:3306');  // 服务器，默认为 localhost:3306，使用长连接在地址前加 p:，如：p:localhost:3306
-define('CONF_MYSQL_USER',   'root');            // 用户名，默认为 root
-define('CONF_MYSQL_PASSWD', '123456');          // 密码，默认为空
-define('CONF_MYSQL_DBNAME', 'test');            // 数据库名，默认为空
-define('CONF_MYSQL_PERMANENT', false);          // 使用使用永久连接，默认false
+APP::set('MYSQL_SERVER', 'localhost:3306');  // 服务器，默认为 localhost:3306，使用长连接在地址前加 p:，如：p:localhost:3306
+APP::set('MYSQL_USER',   'root');            // 用户名，默认为 root
+APP::set('MYSQL_PASSWD', '123456');          // 密码，默认为空
+APP::set('MYSQL_DBNAME', 'test');            // 数据库名，默认为空
+APP::set('MYSQL_PERMANENT', false);          // 使用使用永久连接，默认false
 
-// 载入LeiPHP并初始化
-require(APP_ROOT.'leiphp.php');
+// 初始化
 APP::init();
 ?>
 ```
@@ -72,14 +74,14 @@ APP::init();
 如果通过`composer`安装，则载入路径应改为：
 
 ```php
-require(APP_ROOT.'/vendor/leizongmin/leiphp/leiphp.php');
+require('vendor/leizongmin/leiphp/leiphp.php');
 ```
 
-在所有php程序中，均可载入`config.inc.php`文件唉实现初始化LeiPHP：
+在所有php程序中，均可载入`global.inc.php`文件唉实现初始化LeiPHP：
 
 ```php
 <?php
-require('config.inc.php');
+require('global.inc.php');
 // ...
 ?>
 ```
@@ -90,7 +92,7 @@ LeiPHP可以根据不同的请求方法来调用相应的处理函数完成请�
 
 ```php
 <?php
-require('config.inc.php');
+require('global.inc.php');
 
 // 这里是公共部分的代码，所有请求方法都会执行下面的代码
 echo '所有请求方法都会执行这里的代码';
@@ -200,6 +202,9 @@ LeiPHP中提供了一个静态类 __DEBUG__ 来操作调试信息，当定义了
 
 LeiPHP中提供了一个静态类 __APP__ 来进行应用相关的操作，及一些公共函数：
 
+* `APP::set($name, $value)` 设置
+* `APP::get($name)` 获取设置值
+* `APP::is_set($name)` 检查是否有指定设置项
 * `APP::encrypt_password ($password)` 加密密码，返回一个加盐处理后的MD5字符串，如：`FF:15855D447208A6AB4BD2CC88D4B91732:83`；
 * `APP::validate_password ($password, $encrypted)` 验证密码，第一个参数为待验证的密码，第二个参数为`APP::encrypt_password ($password)`返回的字符串，返回`TRUE`或`FALSE`；
 * `APP::dump($var)` 打印变量结构，一般用于调试；
@@ -228,7 +233,7 @@ LeiPHP中提供了一个静态类 __ROUTER__ 来进行路由相关的操作：
 
 ```php
 <?php
-require('config.inc.php');
+require('global.inc.php');
 ROUTER::run('action', @$_GET['__path__']);
 ?>
 ```
@@ -247,7 +252,7 @@ function method_get() {
 
 ```php
 <?php
-require('config.inc.php');
+require('global.inc.php');
 ROUTER::run('action', @$_SERVER['PATH_INFO']);
 ?>
 ```

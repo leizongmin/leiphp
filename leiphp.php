@@ -14,7 +14,7 @@ function _leiphp_request_method_router () {
   // 执行相应的请求方法
   $method = strtolower($_SERVER['REQUEST_METHOD']);
   $funcname = "method_$method";
-  define('APP_TIMESTAMP_ROUTE', microtime(true));
+  APP::set('TIMESTAMP_ROUTE', microtime(true));
   if (function_exists($funcname)) {
     $funcname();
   } elseif (function_exists('method_all')) {
@@ -30,8 +30,8 @@ function _leiphp_request_method_router () {
   // 显示调试信息
   $accept_type = @strtolower(trim($_SERVER['HTTP_ACCEPT']));
   if (APP::$is_debug && substr($accept_type, 0, 9) == 'text/html') {
-    $spent2 = round((microtime(true) - APP_TIMESTAMP_ROUTE) * 1000, 3);
-    $spent = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3);
+    $spent2 = round((microtime(true) - APP::get('TIMESTAMP_ROUTE')) * 1000, 3);
+    $spent = round((microtime(true) - APP::get('TIMESTAMP_START')) * 1000, 3);
     $debug = DEBUG::clear();
     echo "<div style='
       font-size: 14px;
@@ -70,7 +70,7 @@ if (!class_exists('DEBUG', false)) {
         if (!empty($title)) {
           $msg = "[$title] $msg";
         }
-        $timestamp = round((microtime(true) - APP_TIMESTAMP_START) * 1000, 3).'ms';
+        $timestamp = round((microtime(true) - APP::get('TIMESTAMP_START')) * 1000, 3).'ms';
         DEBUG::$stack .= "[$timestamp] $msg\r\n";
       }
     }
@@ -508,7 +508,7 @@ if (!class_exists('ROUTER', false)) {
       // 中间件处理
       ROUTER::run_middleware($path);
 
-      $filename = APP_ROOT.$dir.$path.(substr($path, -1) == '/' ? '/index' : '').'.php';
+      $filename = APP::get('ROOT').$dir.$path.(substr($path, -1) == '/' ? '/index' : '').'.php';
       DEBUG::put("path=$path, file=$filename", 'Router');
       if (file_exists($filename)) {
         require($filename);
@@ -580,7 +580,7 @@ if (!class_exists('TPL', false)) {
      */
     public static function get ($name, $locals = array()) {
       if (!pathinfo($name, PATHINFO_EXTENSION)) $name = $name.'.html';
-      $filename = APP_TEMPLATE_ROOT.$name;
+      $filename = APP::get('TEMPLATE_ROOT').$name;
       $timestamp = microtime(true);
       ob_start();
       extract($locals, EXTR_SKIP);
@@ -661,6 +661,9 @@ if (!class_exists('APP', false)) {
 
     // 是否为调试状态
     public static $is_debug = false;
+
+    // 设置信息
+    public static $config = array();
 
     /**
      * 账户验证加密解密函数 （来自Discuz!的authcode函数）
@@ -824,7 +827,7 @@ if (!class_exists('APP', false)) {
         $ext = 'php';
       }
       if (substr($filename, 0, 1) == '/') {
-        $filename = APP_ROOT.substr($filename, 1);
+        $filename = APP::get('ROOT').substr($filename, 1);
       } else {
         $filename = dirname($_SERVER["SCRIPT_FILENAME"]).'/'.$filename;
       }
@@ -861,7 +864,7 @@ if (!class_exists('APP', false)) {
      */
     public static function init () {
       // 是否关闭出错显示
-      if (defined('APP_DEBUG') && APP_DEBUG) {
+      if (APP::is_set('DEBUG') && APP::get('DEBUG')) {
         APP::$is_debug = true;
         error_reporting(E_ALL);
         ini_set('display_errors', '1');
@@ -871,22 +874,43 @@ if (!class_exists('APP', false)) {
       }
 
       // 开始时间
-      define('APP_TIMESTAMP_START', microtime(true));
+      APP::set('TIMESTAMP_START', microtime(true));
 
       // 只要定义了数据库配置中的任一项均自动连接数据库
-      if (defined('CONF_MYSQL_SERVER') || defined('CONF_MYSQL_USER') ||
-          defined('CONF_MYSQL_PASSWD') || defined('CONF_MYSQL_DBNAME')) {
-        $server = defined('CONF_MYSQL_SERVER') ? CONF_MYSQL_SERVER : 'localhost:3306';
-        $user = defined('CONF_MYSQL_USER') ? CONF_MYSQL_USER : 'root';
-        $passwd = defined('CONF_MYSQL_PASSWD') ? CONF_MYSQL_PASSWD : '';
-        $dbname = defined('CONF_MYSQL_DBNAME') ? CONF_MYSQL_DBNAME : '';
-        $permanent = defined('CONF_MYSQL_PERMANENT') ? CONF_MYSQL_PERMANENT : false;
+      if (APP::is_set('MYSQL_SERVER') || APP::is_set('MYSQL_USER') ||
+          APP::is_set('MYSQL_PASSWD') || APP::is_set('MYSQL_DBNAME')) {
+        $server = APP::is_set('MYSQL_SERVER') ? APP::get('MYSQL_SERVER') : 'localhost:3306';
+        $user = APP::is_set('MYSQL_USER') ? APP::get('MYSQL_USER') : 'root';
+        $passwd = APP::is_set('MYSQL_PASSWD') ? APP::get('MYSQL_PASSWD') : '';
+        $dbname = APP::is_set('MYSQL_DBNAME') ? APP::get('MYSQL_DBNAME') : '';
+        $permanent = APP::is_set('MYSQL_PERMANENT') ? APP::get('MYSQL_PERMANENT') : false;
         SQL::connect($server, $user, $passwd, $dbname, $permanent);
-        if (defined('CONF_MYSQL_CHARSET')) SQL::charset(CONF_MYSQL_CHARSET);
+        if (APP::is_set('MYSQL_CHARSET')) SQL::charset(APP::get('MYSQL_CHARSET'));
       }
 
       // 自动执行 method_VERB
       register_shutdown_function('_leiphp_request_method_router');
+    }
+
+    /**
+     * 设置
+     */
+    public static function set ($name, $value) {
+      APP::$config[$name] = $value;
+    }
+
+    /**
+     * 获取设置
+     */
+    public static function get ($name) {
+      return APP::$config[$name];
+    }
+
+    /**
+     * 检查是否有该项设置
+     */
+    public static function is_set ($name) {
+      return isset(APP::$config[$name]);
     }
 
     /**
