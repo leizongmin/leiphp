@@ -291,7 +291,7 @@ handle:
 基于MIT协议发布。
 
 ```text
-Copyright (c) 2012-2018 Lei Zongmin(雷宗民) <leizongmin@gmail.com>
+Copyright (c) 2012-2019 Zongmin Lei <leizongmin@gmail.com>
 http://ucdok.com
 
 The MIT License
