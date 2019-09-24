@@ -3,7 +3,7 @@
  * LeiPHP
  *
  * @author 老雷<leizongmin@gmail.com>
- * @version 0.4.2
+ * @version 0.5.0
  */
 
 /* 处理不同的请求方法 */
