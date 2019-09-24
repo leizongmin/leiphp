@@ -35,7 +35,7 @@ Features:
 
 ## 安装
 
-* 直接下载`leiphp.php`文件：`wget https://raw.githubusercontent.com/leizongmin/leiphp/master/leiphp.php`
+* 直接下载`lei.php`文件：`wget https://raw.githubusercontent.com/leizongmin/leiphp/v0.5/lei.php`
 * 通过`composer`安装：`composer require leizongmin/leiphp`
 
 ## 初始化
@@ -49,7 +49,7 @@ Features:
  */
 
 // 载入LeiPHP
-require('leiphp.php');
+require('lei.php');
 
 // 当前应用的根目录
 APP::set('ROOT', dirname(__FILE__ ).'/');
@@ -74,7 +74,7 @@ APP::init();
 如果通过`composer`安装，则载入路径应改为：
 
 ```php
-require('vendor/leizongmin/leiphp/leiphp.php');
+require('vendor/leizongmin/leiphp/lei.php');
 ```
 
 在所有php程序中，均可载入`global.inc.php`文件唉实现初始化LeiPHP：

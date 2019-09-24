@@ -4,7 +4,7 @@
  */
 
 // 载入LeiPHP
-require('../leiphp.php');
+require('../lei.php');
 
 // 当前应用的根目录
 APP::set('ROOT', dirname(__FILE__ ).'/');
