@@ -35,7 +35,7 @@ Features:
 
 ## 安装
 
-* 直接下载`lei.php`文件：`wget https://raw.githubusercontent.com/leizongmin/leiphp/v0.5/lei.php`
+* 直接下载`lei.php`文件：`wget https://raw.githubusercontent.com/leizongmin/leiphp/master/lei.php`
 * 通过`composer`安装：`composer require leizongmin/leiphp`
 
 ## 初始化
